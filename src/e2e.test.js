@@ -1,0 +1,41 @@
+import { describe, it, expect } from 'vitest';
+import { warp, run, group, add, outcome, ref, cost, flush } from './index.js';
+import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE } from '../test/setup.js';
+
+setupBeforeEach();
+
+describe('end-to-end', () => {
+  it('full agent flow: warp -> run -> group -> add -> outcome -> flush', async () => {
+    const client = createMockOpenAI(OPENAI_RESPONSE);
+    const openai = warp(client);
+
+    const r = run('code-review', { link: 'ticket:123', name: 'Review PR' });
+    const planning = group('planning', { name: 'Plan Phase' });
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'Plan a review' }],
+    });
+
+    add(planning, response);
+    add(r, planning);
+    outcome(r, 'completed', { reason: 'Looks good', source: 'ci' });
+
+    expect(ref(r)).toBe(r.id);
+    expect(ref(planning)).toBe(planning.id);
+    expect(ref(response)).toMatch(/^wm_call_/);
+    expect(cost(r)).toBeGreaterThan(0);
+    expect(cost(response)).toBeGreaterThan(0);
+    expect(cost(r)).toEqual(cost(response));
+
+    await flush();
+
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.runs).toHaveLength(1);
+    expect(body.groups).toHaveLength(1);
+    expect(body.calls).toHaveLength(1);
+    expect(body.links).toHaveLength(2);
+    expect(body.outcomes).toHaveLength(1);
+    expect(body.outcomes[0].name).toBe('completed');
+  });
+});

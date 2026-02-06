@@ -1,0 +1,45 @@
+{
+  "name": "warpmetrics",
+  "version": "0.0.1",
+  "description": "Measure your agents, not your LLM calls.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "llm",
+    "observability",
+    "openai",
+    "anthropic",
+    "claude",
+    "gpt",
+    "tracing",
+    "monitoring"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nikolaionken/warpmetrics"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.5"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.1",
+    "vitest": "^1.2.0"
+  }
+}

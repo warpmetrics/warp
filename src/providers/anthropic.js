@@ -1,0 +1,51 @@
+// Warpmetrics SDK — Anthropic Provider
+
+export const name = 'anthropic';
+
+export function detect(client) {
+  return client?.constructor?.name === 'Anthropic';
+}
+
+export function extract(result) {
+  const input  = result?.usage?.input_tokens || 0;
+  const output = result?.usage?.output_tokens || 0;
+  return {
+    response: Array.isArray(result?.content)
+      ? result.content.filter(c => c.type === 'text').map(c => c.text).join('')
+      : '',
+    tokens: { prompt: input, completion: output, total: input + output },
+    toolCalls: null,
+  };
+}
+
+export function extractStreamDelta(chunk) {
+  return {
+    content: chunk.type === 'content_block_delta' ? (chunk.delta?.text || null) : null,
+    usage:   chunk.type === 'message_delta' ? (chunk.usage || null) : null,
+  };
+}
+
+export function normalizeUsage(usage) {
+  const prompt     = usage?.input_tokens || 0;
+  const completion = usage?.output_tokens || 0;
+  return { prompt, completion, total: prompt + completion };
+}
+
+export function proxy(client, intercept) {
+  return new Proxy(client, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (prop !== 'messages') return value;
+
+      return new Proxy(value, {
+        get(msgTarget, msgProp, msgReceiver) {
+          const msgValue = Reflect.get(msgTarget, msgProp, msgReceiver);
+          if (msgProp === 'create' && typeof msgValue === 'function') {
+            return intercept(msgValue, msgTarget);
+          }
+          return msgValue;
+        },
+      });
+    },
+  });
+}
