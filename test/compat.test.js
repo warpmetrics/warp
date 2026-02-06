@@ -1,10 +1,11 @@
 // SDK compatibility tests.
 // These run in CI against multiple versions of the OpenAI and Anthropic SDKs.
-// They mock the HTTP layer, let the real SDK parse responses into its own objects,
-// then verify our extract functions handle those objects correctly.
+// They inject a mock fetch via the SDK's constructor option, let the real SDK
+// parse responses into its own objects, then verify our extract functions
+// handle those objects correctly.
 // Skipped locally if SDKs aren't installed.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { warp, ref, flush } from '../src/index.js';
 import { responseRegistry } from '../src/core/registry.js';
 import { setupBeforeEach } from './setup.js';
@@ -62,19 +63,29 @@ const ANTHROPIC_PAYLOAD = {
 };
 
 // ---------------------------------------------------------------------------
-// Helper: mock fetch to return a JSON payload with proper Response shape
+// Helper: create a mock fetch that returns a JSON payload
 // ---------------------------------------------------------------------------
 
-function mockFetchResponse(payload) {
+function createMockFetch(payload) {
   const body = JSON.stringify(payload);
-  global.fetch = vi.fn().mockResolvedValue(new Response(body, {
-    status: 200,
-    headers: {
-      'content-type': 'application/json',
-      'x-request-id': 'req-compat-test',
-    },
-  }));
+  return vi.fn().mockImplementation(() =>
+    Promise.resolve(new Response(body, {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': 'req-compat-test',
+      },
+    })),
+  );
 }
+
+// ---------------------------------------------------------------------------
+// Detect if Responses API exists on the installed OpenAI SDK version
+// ---------------------------------------------------------------------------
+
+const hasResponsesAPI = OpenAI
+  ? (() => { try { const c = new OpenAI({ apiKey: 'x' }); return typeof c.responses?.create === 'function'; } catch { return false; } })()
+  : false;
 
 // ---------------------------------------------------------------------------
 // OpenAI
@@ -91,20 +102,21 @@ describe.skipIf(!OpenAI)('OpenAI SDK compatibility', () => {
     expect(typeof client.chat.completions.create).toBe('function');
   });
 
-  it('client has responses.create', () => {
+  it.skipIf(!hasResponsesAPI)('client has responses.create', () => {
     const client = new OpenAI({ apiKey: 'sk-test' });
     expect(typeof client.responses.create).toBe('function');
   });
 
   it('extract handles real SDK chat completion response', async () => {
-    mockFetchResponse(OPENAI_CHAT_PAYLOAD);
-    const client = new OpenAI({ apiKey: 'sk-test' });
+    const mockFetch = createMockFetch(OPENAI_CHAT_PAYLOAD);
+    const client = new OpenAI({ apiKey: 'sk-test', fetch: mockFetch });
 
     const result = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: 'hi' }],
     });
 
+    expect(mockFetch).toHaveBeenCalled();
     const ext = openaiProvider.extract(result);
     expect(ext.response).toBe('Hello from compat test!');
     expect(ext.tokens.prompt).toBe(10);
@@ -112,15 +124,16 @@ describe.skipIf(!OpenAI)('OpenAI SDK compatibility', () => {
     expect(ext.tokens.total).toBe(15);
   });
 
-  it('extract handles real SDK responses API response', async () => {
-    mockFetchResponse(OPENAI_RESPONSES_PAYLOAD);
-    const client = new OpenAI({ apiKey: 'sk-test' });
+  it.skipIf(!hasResponsesAPI)('extract handles real SDK responses API response', async () => {
+    const mockFetch = createMockFetch(OPENAI_RESPONSES_PAYLOAD);
+    const client = new OpenAI({ apiKey: 'sk-test', fetch: mockFetch });
 
     const result = await client.responses.create({
       model: 'gpt-4o',
       input: 'hi',
     });
 
+    expect(mockFetch).toHaveBeenCalled();
     const ext = openaiProvider.extract(result);
     expect(ext.response).toContain('Hello from Responses API!');
     expect(ext.tokens.prompt).toBe(8);
@@ -128,8 +141,8 @@ describe.skipIf(!OpenAI)('OpenAI SDK compatibility', () => {
   });
 
   it('warp intercepts and tracks a real SDK call', async () => {
-    mockFetchResponse(OPENAI_CHAT_PAYLOAD);
-    const client = new OpenAI({ apiKey: 'sk-test' });
+    const mockFetch = createMockFetch(OPENAI_CHAT_PAYLOAD);
+    const client = new OpenAI({ apiKey: 'sk-test', fetch: mockFetch });
     const wrapped = warp(client);
 
     const result = await wrapped.chat.completions.create({
@@ -137,6 +150,7 @@ describe.skipIf(!OpenAI)('OpenAI SDK compatibility', () => {
       messages: [{ role: 'user', content: 'hi' }],
     });
 
+    expect(mockFetch).toHaveBeenCalled();
     expect(result.choices[0].message.content).toBe('Hello from compat test!');
     expect(responseRegistry.has(result)).toBe(true);
     expect(ref(result)).toMatch(/^wm_call_/);
@@ -159,8 +173,8 @@ describe.skipIf(!Anthropic)('Anthropic SDK compatibility', () => {
   });
 
   it('extract handles real SDK response', async () => {
-    mockFetchResponse(ANTHROPIC_PAYLOAD);
-    const client = new Anthropic({ apiKey: 'sk-ant-test' });
+    const mockFetch = createMockFetch(ANTHROPIC_PAYLOAD);
+    const client = new Anthropic({ apiKey: 'sk-ant-test', fetch: mockFetch });
 
     const result = await client.messages.create({
       model: 'claude-3-5-sonnet-latest',
@@ -168,6 +182,7 @@ describe.skipIf(!Anthropic)('Anthropic SDK compatibility', () => {
       messages: [{ role: 'user', content: 'hi' }],
     });
 
+    expect(mockFetch).toHaveBeenCalled();
     const ext = anthropicProvider.extract(result);
     expect(ext.response).toBe('Hello from Anthropic compat!');
     expect(ext.tokens.prompt).toBe(12);
@@ -175,8 +190,8 @@ describe.skipIf(!Anthropic)('Anthropic SDK compatibility', () => {
   });
 
   it('warp intercepts and tracks a real SDK call', async () => {
-    mockFetchResponse(ANTHROPIC_PAYLOAD);
-    const client = new Anthropic({ apiKey: 'sk-ant-test' });
+    const mockFetch = createMockFetch(ANTHROPIC_PAYLOAD);
+    const client = new Anthropic({ apiKey: 'sk-ant-test', fetch: mockFetch });
     const wrapped = warp(client);
 
     const result = await wrapped.messages.create({
@@ -185,6 +200,7 @@ describe.skipIf(!Anthropic)('Anthropic SDK compatibility', () => {
       messages: [{ role: 'user', content: 'hi' }],
     });
 
+    expect(mockFetch).toHaveBeenCalled();
     expect(result.content[0].text).toBe('Hello from Anthropic compat!');
     expect(responseRegistry.has(result)).toBe(true);
     expect(ref(result)).toMatch(/^wm_call_/);
