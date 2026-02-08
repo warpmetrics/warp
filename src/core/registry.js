@@ -9,9 +9,3 @@ export const groupRegistry = new Map();
 
 /** @type {WeakMap<object, string>}  LLM response object → call id */
 export const responseRegistry = new WeakMap();
-
-/** @type {WeakMap<object, number>}  LLM response object → cost in USD */
-export const costRegistry = new WeakMap();
-
-/** @type {Map<string, number>}  call id → cost in USD (for aggregation) */
-export const costByCallId = new Map();

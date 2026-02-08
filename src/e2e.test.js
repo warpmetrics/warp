@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warp, run, group, add, outcome, ref, cost, flush } from './index.js';
+import { warp, run, group, add, outcome, ref, flush } from './index.js';
 import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../test/setup.js';
 
 setupBeforeEach();
@@ -24,9 +24,6 @@ describe('end-to-end', () => {
     expect(ref(r)).toBe(r.id);
     expect(ref(planning)).toBe(planning.id);
     expect(ref(response)).toMatch(/^wm_call_/);
-    expect(cost(r)).toBeGreaterThan(0);
-    expect(cost(response)).toBeGreaterThan(0);
-    expect(cost(r)).toEqual(cost(response));
 
     await flush();
 

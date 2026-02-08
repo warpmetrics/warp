@@ -105,15 +105,6 @@ ref(response)  // 'wm_call_01jkx3ndef8mn2q7kpvhc4e9ws'
 ref('wm_run_01jkx3ndek0gh4r5tmqp9a3bcv')  // pass-through
 ```
 
-### `cost(target)`
-
-Get the estimated cost in USD for any target. Aggregates across all nested calls for runs and groups.
-
-```js
-cost(response)  // 0.0012
-cost(r)         // 0.0036 (sum of all calls in the run)
-```
-
 ### `flush()`
 
 Manually flush pending events. Events are auto-flushed on an interval and on process exit, but you can force it.

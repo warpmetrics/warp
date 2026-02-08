@@ -9,11 +9,13 @@ export function detect(client) {
 export function extract(result) {
   const input  = result?.usage?.input_tokens || 0;
   const output = result?.usage?.output_tokens || 0;
+  const cacheWrite = result?.usage?.cache_creation_input_tokens || 0;
+  const cacheRead  = result?.usage?.cache_read_input_tokens || 0;
   return {
     response: Array.isArray(result?.content)
       ? result.content.filter(c => c.type === 'text').map(c => c.text).join('')
       : '',
-    tokens: { prompt: input, completion: output, total: input + output },
+    tokens: { prompt: input, completion: output, total: input + output, cacheWrite, cacheRead },
     toolCalls: null,
   };
 }
@@ -28,7 +30,9 @@ export function extractStreamDelta(chunk) {
 export function normalizeUsage(usage) {
   const prompt     = usage?.input_tokens || 0;
   const completion = usage?.output_tokens || 0;
-  return { prompt, completion, total: prompt + completion };
+  const cacheWrite = usage?.cache_creation_input_tokens || 0;
+  const cacheRead  = usage?.cache_read_input_tokens || 0;
+  return { prompt, completion, total: prompt + completion, cacheWrite, cacheRead };
 }
 
 export function proxy(client, intercept) {

@@ -1,7 +1,7 @@
 // Shared test setup for all co-located test files.
 
 import { vi, beforeEach } from 'vitest';
-import { runRegistry, groupRegistry, costByCallId } from '../src/core/registry.js';
+import { runRegistry, groupRegistry } from '../src/core/registry.js';
 import { setConfig, clearQueue } from '../src/core/transport.js';
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,6 @@ export function setupBeforeEach() {
 
     runRegistry.clear();
     groupRegistry.clear();
-    costByCallId.clear();
     clearQueue();
 
     setConfig({

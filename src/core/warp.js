@@ -1,8 +1,8 @@
 // Warpmetrics SDK — warp()
 // Wraps an LLM client so every API call is automatically tracked.
 
-import { generateId, calculateCost } from './utils.js';
-import { responseRegistry, costRegistry, costByCallId } from './registry.js';
+import { generateId } from './utils.js';
+import { responseRegistry } from './registry.js';
 import { logCall, setConfig, getConfig } from './transport.js';
 import * as openai from '../providers/openai.js';
 import * as anthropic from '../providers/anthropic.js';
@@ -39,21 +39,18 @@ function createInterceptor(originalFn, context, provider) {
       }
 
       const ext  = provider.extract(result);
-      const cost = calculateCost(model, ext.tokens);
 
       logCall({
         id: callId, provider: provider.name, model, messages,
         response: ext.response,
         tools: tools ? tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
         toolCalls: ext.toolCalls,
-        tokens: ext.tokens, cost, latency,
+        tokens: ext.tokens, latency,
         timestamp: new Date().toISOString(),
         status: 'success',
       });
 
       responseRegistry.set(result, callId);
-      costRegistry.set(result, cost);
-      costByCallId.set(callId, cost);
 
       return result;
     } catch (error) {
@@ -90,21 +87,17 @@ function wrapStream(stream, ctx) {
         ? ctx.provider.normalizeUsage(usage)
         : { prompt: 0, completion: 0, total: 0 };
 
-      const cost = calculateCost(ctx.model, tokens);
-
       logCall({
         id: ctx.callId, provider: ctx.provider.name, model: ctx.model, messages: ctx.messages,
         response: content,
         tools: ctx.tools ? ctx.tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
-        tokens, cost,
+        tokens,
         latency: Date.now() - ctx.start,
         timestamp: new Date().toISOString(),
         status: 'success',
       });
 
       responseRegistry.set(wrapped, ctx.callId);
-      costRegistry.set(wrapped, cost);
-      costByCallId.set(ctx.callId, cost);
     },
   };
   return wrapped;

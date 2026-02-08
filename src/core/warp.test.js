@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { warp, flush } from '../index.js';
-import { responseRegistry, costRegistry } from '../core/registry.js';
+import { responseRegistry } from '../core/registry.js';
 import {
   setupBeforeEach, parseFlushedBody,
   createMockOpenAI, createMockAnthropic,
@@ -21,7 +21,6 @@ describe('warp() — OpenAI', () => {
 
     expect(result.choices[0].message.content).toBe('Hello!');
     expect(responseRegistry.has(result)).toBe(true);
-    expect(costRegistry.has(result)).toBe(true);
 
     await flush();
     const body = parseFlushedBody(0);
@@ -66,7 +65,6 @@ describe('warp() — OpenAI Responses API', () => {
 
     expect(result.output_text).toBe('Hello from Responses API!');
     expect(responseRegistry.has(result)).toBe(true);
-    expect(costRegistry.has(result)).toBe(true);
 
     await flush();
     const body = parseFlushedBody(0);

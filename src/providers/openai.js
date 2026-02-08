@@ -16,12 +16,17 @@ function isResponsesAPI(result) {
 }
 
 function extractChatCompletions(result) {
+  const prompt     = result?.usage?.prompt_tokens || 0;
+  const completion = result?.usage?.completion_tokens || 0;
+  const cachedInput = result?.usage?.prompt_tokens_details?.cached_tokens || 0;
+
   return {
     response: result?.choices?.[0]?.message?.content || '',
     tokens: {
-      prompt:     result?.usage?.prompt_tokens || 0,
-      completion: result?.usage?.completion_tokens || 0,
-      total:      result?.usage?.total_tokens || 0,
+      prompt,
+      completion,
+      total: result?.usage?.total_tokens || 0,
+      cachedInput,
     },
     toolCalls: result?.choices?.[0]?.message?.tool_calls?.map(tc => ({
       id: tc.id,
@@ -40,12 +45,13 @@ function extractResponses(result) {
 
   const input  = result?.usage?.input_tokens || 0;
   const output = result?.usage?.output_tokens || 0;
+  const cachedInput = result?.usage?.input_tokens_details?.cached_tokens || 0;
 
   const fnCalls = (result?.output || []).filter(item => item.type === 'function_call');
 
   return {
     response: text,
-    tokens: { prompt: input, completion: output, total: input + output },
+    tokens: { prompt: input, completion: output, total: input + output, cachedInput },
     toolCalls: fnCalls.length > 0
       ? fnCalls.map(fc => ({ id: fc.id, name: fc.name, arguments: fc.arguments }))
       : null,
@@ -79,7 +85,9 @@ export function extractStreamDelta(chunk) {
 export function normalizeUsage(usage) {
   const prompt     = usage?.prompt_tokens || usage?.input_tokens || 0;
   const completion = usage?.completion_tokens || usage?.output_tokens || 0;
-  return { prompt, completion, total: prompt + completion };
+  const cachedInput = usage?.prompt_tokens_details?.cached_tokens
+    || usage?.input_tokens_details?.cached_tokens || 0;
+  return { prompt, completion, total: prompt + completion, cachedInput };
 }
 
 // ---------------------------------------------------------------------------

@@ -67,8 +67,5 @@ export function outcome(
 /** Resolve any trackable target to its string ID. */
 export function ref(target: Run | Group | object | string): string | undefined;
 
-/** Get the cost in USD for any tracked target. */
-export function cost(target: Run | Group | object | string): number;
-
 /** Manually flush pending events to the API. */
 export function flush(): Promise<void>;
