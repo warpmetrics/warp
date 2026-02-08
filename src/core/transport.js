@@ -104,6 +104,13 @@ export async function flush() {
     );
   }
 
+  const raw = JSON.stringify(batch);
+  const body = JSON.stringify({ d: Buffer.from(raw, 'utf-8').toString('base64') });
+
+  if (config.debug) {
+    console.log(`[warpmetrics] Payload size: ${(raw.length / 1024).toFixed(1)}KB → ${(body.length / 1024).toFixed(1)}KB (encoded)`);
+  }
+
   try {
     const res = await fetch(`${config.baseUrl}/v1/events`, {
       method: 'POST',
@@ -112,7 +119,7 @@ export async function flush() {
         'Authorization': `Bearer ${config.apiKey}`,
         'X-SDK-Version': SDK_VERSION,
       },
-      body: JSON.stringify(batch),
+      body,
     });
 
     if (!res.ok) {

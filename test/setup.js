@@ -62,6 +62,15 @@ export const ANTHROPIC_RESPONSE = {
 };
 
 // ---------------------------------------------------------------------------
+// Decode a flushed body from the base64 envelope { d: "..." }
+// ---------------------------------------------------------------------------
+
+export function parseFlushedBody(callIndex = 0) {
+  const envelope = JSON.parse(global.fetch.mock.calls[callIndex][1].body);
+  return JSON.parse(Buffer.from(envelope.d, 'base64').toString('utf-8'));
+}
+
+// ---------------------------------------------------------------------------
 // Reset state before each test
 // ---------------------------------------------------------------------------
 

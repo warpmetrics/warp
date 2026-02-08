@@ -140,6 +140,14 @@ export function warp(client, options) {
     });
   }
 
+  const finalCfg = getConfig();
+  if (finalCfg.debug) {
+    const masked = finalCfg.apiKey
+      ? finalCfg.apiKey.slice(0, 10) + '...' + finalCfg.apiKey.slice(-4)
+      : '(none)';
+    console.log(`[warpmetrics] Config: baseUrl=${finalCfg.baseUrl} apiKey=${masked} enabled=${finalCfg.enabled} flushInterval=${finalCfg.flushInterval} maxBatchSize=${finalCfg.maxBatchSize}`);
+  }
+
   const provider = findProvider(client);
 
   if (!provider) {
