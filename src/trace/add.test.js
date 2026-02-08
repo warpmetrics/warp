@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { warp, run, group, add, flush } from '../index.js';
 import { runRegistry, groupRegistry } from '../core/registry.js';
-import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE } from '../../test/setup.js';
+import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../../test/setup.js';
 
 setupBeforeEach();
 
@@ -18,7 +18,7 @@ describe('add()', () => {
     expect(groupData.parentId).toBe(r.id);
 
     await flush();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     const link = body.links.find(l => l.childId === g.id);
     expect(link).toBeDefined();
     expect(link.parentId).toBe(r.id);

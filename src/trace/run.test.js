@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { run, flush } from '../index.js';
 import { runRegistry } from '../core/registry.js';
-import { setupBeforeEach } from '../../test/setup.js';
+import { setupBeforeEach, parseFlushedBody } from '../../test/setup.js';
 
 setupBeforeEach();
 
@@ -27,7 +27,7 @@ describe('run()', () => {
     run('test-label');
     await flush();
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.runs).toHaveLength(1);
     expect(body.runs[0].label).toBe('test-label');
   });
