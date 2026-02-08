@@ -129,7 +129,8 @@ export async function flush() {
 
     if (config.debug) {
       const result = await res.json();
-      console.log(`[warpmetrics] Flush OK — received=${result.received} processed=${result.processed}`);
+      const d = result.data || result;
+      console.log(`[warpmetrics] Flush OK — received=${d.received} processed=${d.processed}`);
     }
   } catch (err) {
     if (config.debug) {
