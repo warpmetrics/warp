@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { warp, flush } from '../index.js';
 import { responseRegistry, costRegistry } from '../core/registry.js';
 import {
-  setupBeforeEach,
+  setupBeforeEach, parseFlushedBody,
   createMockOpenAI, createMockAnthropic,
   OPENAI_RESPONSE, OPENAI_RESPONSES_API_RESPONSE, ANTHROPIC_RESPONSE,
 } from '../../test/setup.js';
@@ -24,7 +24,7 @@ describe('warp() — OpenAI', () => {
     expect(costRegistry.has(result)).toBe(true);
 
     await flush();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
     expect(body.calls[0].model).toBe('gpt-4o-mini');
     expect(body.calls[0].tokens.total).toBe(15);
@@ -42,7 +42,7 @@ describe('warp() — OpenAI', () => {
     ).rejects.toThrow('Rate limit exceeded');
 
     await flush();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
     expect(body.calls[0].status).toBe('error');
     expect(body.calls[0].error).toBe('Rate limit exceeded');
@@ -69,7 +69,7 @@ describe('warp() — OpenAI Responses API', () => {
     expect(costRegistry.has(result)).toBe(true);
 
     await flush();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
     expect(body.calls[0].model).toBe('gpt-4o');
     expect(body.calls[0].tokens.prompt).toBe(8);
@@ -92,7 +92,7 @@ describe('warp() — Anthropic', () => {
     expect(responseRegistry.has(result)).toBe(true);
 
     await flush();
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
     expect(body.calls[0].provider).toBe('anthropic');
     expect(body.calls[0].tokens.prompt).toBe(12);

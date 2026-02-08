@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { warp, run, group, add, outcome, ref, cost, flush } from './index.js';
-import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE } from '../test/setup.js';
+import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../test/setup.js';
 
 setupBeforeEach();
 
@@ -30,7 +30,7 @@ describe('end-to-end', () => {
 
     await flush();
 
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const body = parseFlushedBody(0);
     expect(body.runs).toHaveLength(1);
     expect(body.groups).toHaveLength(1);
     expect(body.calls).toHaveLength(1);

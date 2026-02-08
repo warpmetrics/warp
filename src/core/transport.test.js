@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createRequire } from 'module';
 import { run, flush } from '../index.js';
-import { setupBeforeEach } from '../../test/setup.js';
+import { setupBeforeEach, parseFlushedBody } from '../../test/setup.js';
 
 const { version } = createRequire(import.meta.url)('../../package.json');
 
@@ -30,7 +30,7 @@ describe('transport', () => {
     await flush();
     expect(global.fetch).toHaveBeenCalledTimes(2);
 
-    const body = JSON.parse(global.fetch.mock.calls[1][1].body);
+    const body = parseFlushedBody(1);
     expect(body.runs).toHaveLength(1);
   });
 
