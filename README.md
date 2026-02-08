@@ -7,14 +7,14 @@ Warp is a lightweight SDK that wraps your existing OpenAI or Anthropic client an
 ## Install
 
 ```bash
-npm install warpmetrics
+npm install @warpmetrics/warp
 ```
 
 ## Quick start
 
 ```js
 import OpenAI from 'openai';
-import { warp, run, group, add, outcome } from 'warpmetrics';
+import { warp, run, group, add, outcome } from '@warpmetrics/warp';
 
 const openai = warp(new OpenAI(), { apiKey: 'wm_...' });
 
@@ -100,9 +100,9 @@ outcome(r, 'completed', {
 Resolve any target (run, group, or LLM response) to its string ID. Useful for passing IDs to your frontend or storing them.
 
 ```js
-ref(r)         // 'wm_run_a1b2c3d4e5f6'
-ref(response)  // 'wm_call_x9y8z7w6v5u4'
-ref('wm_run_abc')  // pass-through
+ref(r)         // 'wm_run_01jkx3ndek0gh4r5tmqp9a3bcv'
+ref(response)  // 'wm_call_01jkx3ndef8mn2q7kpvhc4e9ws'
+ref('wm_run_01jkx3ndek0gh4r5tmqp9a3bcv')  // pass-through
 ```
 
 ### `cost(target)`
