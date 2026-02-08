@@ -25,6 +25,11 @@ describe('outcome()', () => {
     expect(body.outcomes[0].targetId).toBe('wm_run_abc123');
   });
 
+  it('ignores unrecognised targets', () => {
+    outcome({}, 'test');
+    // no error thrown, silently ignored
+  });
+
   it('works on an LLM response', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const wrapped = warp(client);

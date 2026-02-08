@@ -48,6 +48,28 @@ describe('add()', () => {
     expect(data.groups).toHaveLength(2);
   });
 
+  it('ignores unrecognised targets', () => {
+    add('not-a-target', group('step'));
+    // no error thrown, silently ignored
+  });
+
+  it('ignores adding a run to another run', () => {
+    const r1 = run('parent');
+    const r2 = run('child');
+    add(r1, r2);
+
+    const data = runRegistry.get(r1.id);
+    expect(data.groups).toHaveLength(0);
+  });
+
+  it('ignores untracked items', () => {
+    const r = run('test');
+    add(r, { notAnLLMResponse: true });
+
+    const data = runRegistry.get(r.id);
+    expect(data.calls).toHaveLength(0);
+  });
+
   it('nests groups inside groups', () => {
     const r = run('test');
     const parent = group('outer');
