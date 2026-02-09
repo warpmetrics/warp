@@ -31,6 +31,11 @@ export interface GroupOptions {
   name?: string;
 }
 
+export interface Outcome {
+  readonly id: string;
+  readonly _type: 'outcome';
+}
+
 export interface OutcomeOptions {
   /** Why this outcome occurred */
   reason?: string;
@@ -58,22 +63,22 @@ export function group(label: string, options?: GroupOptions): Group;
 /** Add items (groups or LLM responses) to a run or group. */
 export function add(target: Run | Group | string, ...items: any[]): void;
 
-/** Record an outcome on any tracked target. */
+/** Record an outcome on any tracked target. Returns an Outcome handle for use with act(). */
 export function outcome(
   target: Run | Group | object | string,
   name: string,
   options?: OutcomeOptions,
-): void;
+): Outcome | undefined;
 
-/** Record an action taken on a tracked target (e.g. acting on feedback). */
+/** Record an action taken on an outcome (e.g. acting on feedback). */
 export function act(
-  target: Run | Group | object | string,
+  target: Outcome | string,
   name: string,
   metadata?: Record<string, any>,
 ): void;
 
 /** Resolve any trackable target to its string ID. */
-export function ref(target: Run | Group | object | string): string | undefined;
+export function ref(target: Run | Group | Outcome | object | string): string | undefined;
 
 /** Manually flush pending events to the API. */
 export function flush(): Promise<void>;

@@ -19,12 +19,13 @@ describe('end-to-end', () => {
 
     add(planning, response);
     add(r, planning);
-    outcome(r, 'completed', { reason: 'Looks good', source: 'ci' });
-    act(r, 'improve-section', { diff: { before: 'old', after: 'new' } });
+    const oc = outcome(r, 'completed', { reason: 'Looks good', source: 'ci' });
+    act(oc, 'improve-section', { diff: { before: 'old', after: 'new' } });
 
     expect(ref(r)).toBe(r.id);
     expect(ref(planning)).toBe(planning.id);
     expect(ref(response)).toMatch(/^wm_call_/);
+    expect(oc.id).toMatch(/^wm_oc_/);
 
     await flush();
 
@@ -35,8 +36,9 @@ describe('end-to-end', () => {
     expect(body.links).toHaveLength(2);
     expect(body.outcomes).toHaveLength(1);
     expect(body.outcomes[0].name).toBe('completed');
+    expect(body.outcomes[0].id).toBe(oc.id);
     expect(body.acts).toHaveLength(1);
     expect(body.acts[0].name).toBe('improve-section');
-    expect(body.acts[0].targetId).toBe(r.id);
+    expect(body.acts[0].targetId).toBe(oc.id);
   });
 });

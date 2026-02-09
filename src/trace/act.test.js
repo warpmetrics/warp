@@ -1,28 +1,48 @@
 import { describe, it, expect } from 'vitest';
-import { warp, run, group, act, flush } from '../index.js';
-import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../../test/setup.js';
+import { run, group, outcome, act, flush } from '../index.js';
+import { setupBeforeEach, parseFlushedBody } from '../../test/setup.js';
 
 setupBeforeEach();
 
 describe('act()', () => {
-  it('enqueues an act event for a run', async () => {
+  it('enqueues an act event targeting an outcome', async () => {
     const r = run('test');
-    act(r, 'improve-section');
+    const oc = outcome(r, 'feedback-negative');
+    act(oc, 'improve-section');
     await flush();
 
     const body = parseFlushedBody(0);
     const a = body.acts.find(e => e.name === 'improve-section');
     expect(a).toBeDefined();
-    expect(a.targetId).toBe(r.id);
+    expect(a.targetId).toBe(oc.id);
+    expect(a.targetId).toMatch(/^wm_oc_/);
   });
 
-  it('works with a ref string', async () => {
-    act('wm_grp_abc123', 'refine-prompt');
+  it('works with an outcome ref string', async () => {
+    act('wm_oc_abc123', 'refine-prompt');
     await flush();
 
     const body = parseFlushedBody(0);
-    expect(body.acts[0].targetId).toBe('wm_grp_abc123');
+    expect(body.acts[0].targetId).toBe('wm_oc_abc123');
     expect(body.acts[0].name).toBe('refine-prompt');
+  });
+
+  it('rejects non-outcome targets silently', async () => {
+    const r = run('test');
+    act(r, 'improve-section');
+    await flush();
+
+    const body = parseFlushedBody(0);
+    expect(body.acts).toHaveLength(0);
+  });
+
+  it('rejects group targets silently', async () => {
+    const g = group('page');
+    act(g, 'improve-section');
+    await flush();
+
+    const body = parseFlushedBody(0);
+    expect(body.acts).toHaveLength(0);
   });
 
   it('ignores unrecognised targets', () => {
@@ -30,22 +50,10 @@ describe('act()', () => {
     // no error thrown, silently ignored
   });
 
-  it('works on an LLM response', async () => {
-    const client = createMockOpenAI(OPENAI_RESPONSE);
-    const wrapped = warp(client);
-    const response = await wrapped.chat.completions.create({ model: 'gpt-4o-mini', messages: [] });
-
-    act(response, 'regenerated');
-    await flush();
-
-    const body = parseFlushedBody(0);
-    const a = body.acts.find(e => e.name === 'regenerated');
-    expect(a.targetId).toMatch(/^wm_call_/);
-  });
-
   it('works without metadata', async () => {
     const r = run('test');
-    act(r, 'improve-section');
+    const oc = outcome(r, 'feedback-negative');
+    act(oc, 'improve-section');
     await flush();
 
     const body = parseFlushedBody(0);
@@ -55,8 +63,9 @@ describe('act()', () => {
   });
 
   it('includes metadata when provided', async () => {
-    const g = group('page');
-    act(g, 'improve-section', {
+    const r = run('test');
+    const oc = outcome(r, 'feedback-negative');
+    act(oc, 'improve-section', {
       diff: { before: 'old', after: 'new' },
       learnings: ['be specific'],
     });
@@ -64,16 +73,17 @@ describe('act()', () => {
 
     const body = parseFlushedBody(0);
     const a = body.acts[0];
-    expect(a.targetId).toBe(g.id);
+    expect(a.targetId).toBe(oc.id);
     expect(a.metadata.diff).toEqual({ before: 'old', after: 'new' });
     expect(a.metadata.learnings).toEqual(['be specific']);
   });
 
-  it('can be called multiple times on the same target', async () => {
-    const g = group('section', { name: 'src/utils.js:api' });
-    act(g, 'improve-section');
-    act(g, 'refine-prompt');
-    act(g, 'extract-learning', { rule: 'always show error codes' });
+  it('can be called multiple times on the same outcome', async () => {
+    const r = run('test');
+    const oc = outcome(r, 'feedback-negative');
+    act(oc, 'improve-section');
+    act(oc, 'refine-prompt');
+    act(oc, 'extract-learning', { rule: 'always show error codes' });
     await flush();
 
     const body = parseFlushedBody(0);
@@ -84,7 +94,8 @@ describe('act()', () => {
 
   it('includes timestamp', async () => {
     const r = run('test');
-    act(r, 'improve-section');
+    const oc = outcome(r, 'feedback-negative');
+    act(oc, 'improve-section');
     await flush();
 
     const body = parseFlushedBody(0);

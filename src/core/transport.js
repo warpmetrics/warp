@@ -187,6 +187,7 @@ export function logLink(data) {
 
 export function logOutcome(data) {
   enqueue('outcomes', {
+    id: data.id,
     targetId: data.targetId,
     name: data.name,
     reason: data.reason,
