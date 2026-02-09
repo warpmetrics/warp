@@ -76,6 +76,38 @@ describe('warp() — OpenAI Responses API', () => {
   });
 });
 
+describe('warp() — OpenAI streaming', () => {
+  it('wraps stream and tracks the call after iteration', async () => {
+    const chunks = [
+      { choices: [{ delta: { content: 'Hel' } }] },
+      { choices: [{ delta: { content: 'lo!' } }] },
+      { usage: { prompt_tokens: 5, completion_tokens: 3, total_tokens: 8 } },
+    ];
+    const mockStream = { async *[Symbol.asyncIterator]() { for (const c of chunks) yield c; } };
+    const client = createMockOpenAI(null);
+    client.chat.completions.create = vi.fn().mockResolvedValue(mockStream);
+    const wrapped = warp(client);
+
+    const stream = await wrapped.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: 'Hi' }],
+      stream: true,
+    });
+
+    const received = [];
+    for await (const chunk of stream) received.push(chunk);
+
+    expect(received).toHaveLength(3);
+
+    await flush();
+    const body = parseFlushedBody(0);
+    expect(body.calls).toHaveLength(1);
+    expect(body.calls[0].response).toBe('Hello!');
+    expect(body.calls[0].tokens.total).toBe(8);
+    expect(body.calls[0].status).toBe('success');
+  });
+});
+
 describe('warp() — Anthropic', () => {
   it('intercepts messages.create and tracks the call', async () => {
     const client = createMockAnthropic(ANTHROPIC_RESPONSE);
@@ -95,5 +127,13 @@ describe('warp() — Anthropic', () => {
     expect(body.calls[0].provider).toBe('anthropic');
     expect(body.calls[0].tokens.prompt).toBe(12);
     expect(body.calls[0].tokens.completion).toBe(8);
+  });
+});
+
+describe('warp() — unknown client', () => {
+  it('returns the client as-is when provider is not recognised', () => {
+    const client = { unknown: true };
+    const result = warp(client, { debug: true });
+    expect(result).toBe(client);
   });
 });
