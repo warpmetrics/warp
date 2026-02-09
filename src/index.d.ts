@@ -42,6 +42,7 @@ export interface OutcomeOptions {
   metadata?: Record<string, any>;
 }
 
+
 /**
  * Wrap an LLM client to automatically track every API call.
  * Pass options on the first call to configure the SDK; env vars are used as defaults.
@@ -62,6 +63,13 @@ export function outcome(
   target: Run | Group | object | string,
   name: string,
   options?: OutcomeOptions,
+): void;
+
+/** Record an action taken on a tracked target (e.g. acting on feedback). */
+export function act(
+  target: Run | Group | object | string,
+  name: string,
+  metadata?: Record<string, any>,
 ): void;
 
 /** Resolve any trackable target to its string ID. */

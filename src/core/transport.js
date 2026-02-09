@@ -21,6 +21,7 @@ const queue = {
   calls: [],
   links: [],
   outcomes: [],
+  acts: [],
 };
 
 let flushTimeout = null;
@@ -44,6 +45,7 @@ export function clearQueue() {
   queue.calls.length = 0;
   queue.links.length = 0;
   queue.outcomes.length = 0;
+  queue.acts.length = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -56,7 +58,7 @@ function enqueue(type, event) {
   queue[type].push(event);
 
   const total = queue.runs.length + queue.groups.length + queue.calls.length
-    + queue.links.length + queue.outcomes.length;
+    + queue.links.length + queue.outcomes.length + queue.acts.length;
 
   if (total >= config.maxBatchSize) {
     flush();
@@ -81,10 +83,11 @@ export async function flush() {
     calls: queue.calls.splice(0),
     links: queue.links.splice(0),
     outcomes: queue.outcomes.splice(0),
+    acts: queue.acts.splice(0),
   };
 
   const total = batch.runs.length + batch.groups.length + batch.calls.length
-    + batch.links.length + batch.outcomes.length;
+    + batch.links.length + batch.outcomes.length + batch.acts.length;
 
   if (total === 0) return;
 
@@ -100,7 +103,7 @@ export async function flush() {
       `[warpmetrics] Flushing ${total} events`
       + ` (runs=${batch.runs.length} groups=${batch.groups.length}`
       + ` calls=${batch.calls.length} links=${batch.links.length}`
-      + ` outcomes=${batch.outcomes.length})`
+      + ` outcomes=${batch.outcomes.length} acts=${batch.acts.length})`
     );
   }
 
@@ -142,6 +145,7 @@ export async function flush() {
     queue.calls.unshift(...batch.calls);
     queue.links.unshift(...batch.links);
     queue.outcomes.unshift(...batch.outcomes);
+    queue.acts.unshift(...batch.acts);
   }
 }
 
@@ -188,6 +192,15 @@ export function logOutcome(data) {
     reason: data.reason,
     source: data.source,
     tags: data.tags,
+    metadata: data.metadata,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function logAct(data) {
+  enqueue('acts', {
+    targetId: data.targetId,
+    name: data.name,
     metadata: data.metadata,
     timestamp: new Date().toISOString(),
   });

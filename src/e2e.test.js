@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { warp, run, group, add, outcome, ref, flush } from './index.js';
+import { warp, run, group, add, outcome, act, ref, flush } from './index.js';
 import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../test/setup.js';
 
 setupBeforeEach();
 
 describe('end-to-end', () => {
-  it('full agent flow: warp -> run -> group -> add -> outcome -> flush', async () => {
+  it('full agent flow: warp -> run -> group -> add -> outcome -> act -> flush', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const openai = warp(client);
 
@@ -20,6 +20,7 @@ describe('end-to-end', () => {
     add(planning, response);
     add(r, planning);
     outcome(r, 'completed', { reason: 'Looks good', source: 'ci' });
+    act(r, 'improve-section', { diff: { before: 'old', after: 'new' } });
 
     expect(ref(r)).toBe(r.id);
     expect(ref(planning)).toBe(planning.id);
@@ -34,5 +35,8 @@ describe('end-to-end', () => {
     expect(body.links).toHaveLength(2);
     expect(body.outcomes).toHaveLength(1);
     expect(body.outcomes[0].name).toBe('completed');
+    expect(body.acts).toHaveLength(1);
+    expect(body.acts[0].name).toBe('improve-section');
+    expect(body.acts[0].targetId).toBe(r.id);
   });
 });
