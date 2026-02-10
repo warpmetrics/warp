@@ -6,7 +6,7 @@ const ulid = monotonicFactory();
 
 /**
  * Generate a prefixed ULID-based unique ID (lowercase).
- * @param {'run' | 'grp' | 'call' | 'oc'} prefix
+ * @param {'run' | 'grp' | 'call' | 'oc' | 'act'} prefix
  * @returns {string} e.g. "wm_run_01jkx3ndek0gh4r5tmqp9a3bcv"
  */
 export function generateId(prefix) {

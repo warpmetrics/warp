@@ -7,5 +7,8 @@ export const runRegistry = new Map();
 /** @type {Map<string, object>}  group id → group data */
 export const groupRegistry = new Map();
 
+/** @type {Map<string, object>}  act id → act data */
+export const actRegistry = new Map();
+
 /** @type {WeakMap<object, string>}  LLM response object → call id */
 export const responseRegistry = new WeakMap();

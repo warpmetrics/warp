@@ -13,7 +13,7 @@ describe('outcome()', () => {
     const body = parseFlushedBody(0);
     const o = body.outcomes.find(e => e.name === 'completed');
     expect(o).toBeDefined();
-    expect(o.targetId).toBe(r.id);
+    expect(o.refId).toBe(r.id);
     expect(o.reason).toBe('All good');
   });
 
@@ -43,7 +43,7 @@ describe('outcome()', () => {
 
     expect(oc.id).toMatch(/^wm_oc_/);
     const body = parseFlushedBody(0);
-    expect(body.outcomes[0].targetId).toBe('wm_run_abc123');
+    expect(body.outcomes[0].refId).toBe('wm_run_abc123');
   });
 
   it('returns undefined for unrecognised targets', () => {
@@ -62,6 +62,6 @@ describe('outcome()', () => {
     expect(oc.id).toMatch(/^wm_oc_/);
     const body = parseFlushedBody(0);
     const o = body.outcomes.find(e => e.name === 'helpful');
-    expect(o.targetId).toMatch(/^wm_call_/);
+    expect(o.refId).toMatch(/^wm_call_/);
   });
 });

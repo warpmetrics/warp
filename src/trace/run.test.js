@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { run, flush } from '../index.js';
+import { run, outcome, act, flush } from '../index.js';
 import { runRegistry } from '../core/registry.js';
 import { setupBeforeEach, parseFlushedBody } from '../../test/setup.js';
 
@@ -19,6 +19,7 @@ describe('run()', () => {
     expect(data.label).toBe('code-review');
     expect(data.name).toBe('PR #42');
     expect(data.link).toBe('https://github.com/pr/42');
+    expect(data.refId).toBeNull();
     expect(data.groups).toEqual([]);
     expect(data.calls).toEqual([]);
   });
@@ -30,5 +31,66 @@ describe('run()', () => {
     const body = parseFlushedBody(0);
     expect(body.runs).toHaveLength(1);
     expect(body.runs[0].label).toBe('test-label');
+  });
+
+  it('sends refId: null for new runs', async () => {
+    run('test-label');
+    await flush();
+    const body = parseFlushedBody(0);
+    expect(body.runs[0].refId).toBeNull();
+  });
+
+  it('accepts an act ref as first arg', async () => {
+    const r1 = run('test');
+    const oc = outcome(r1, 'fail');
+    const a = act(oc, 'retry');
+    const r2 = run(a, 'test-followup');
+    await flush();
+
+    const body = parseFlushedBody(0);
+    const followUpRun = body.runs.find(r => r.id === r2.id);
+    expect(followUpRun).toBeDefined();
+    expect(followUpRun.refId).toBe(a.id);
+    expect(followUpRun.refId).toMatch(/^wm_act_/);
+    expect(followUpRun.label).toBe('test-followup');
+  });
+
+  it('accepts act ref with options', async () => {
+    const r1 = run('test');
+    const oc = outcome(r1, 'fail');
+    const a = act(oc, 'retry');
+    const r2 = run(a, 'test-followup', { name: 'Retry Run', link: 'ticket:42' });
+
+    const data = runRegistry.get(r2.id);
+    expect(data.refId).toBe(a.id);
+    expect(data.name).toBe('Retry Run');
+    expect(data.link).toBe('ticket:42');
+  });
+
+  it('accepts string act ref', async () => {
+    const r2 = run('wm_act_xxx', 'test-followup');
+    await flush();
+
+    const body = parseFlushedBody(0);
+    expect(body.runs[0].refId).toBe('wm_act_xxx');
+  });
+
+  it('silently drops non-act ref (refId = null)', async () => {
+    const r1 = run('test');
+    const r2 = run(r1, 'test-followup');
+    await flush();
+
+    const body = parseFlushedBody(0);
+    const followUpRun = body.runs.find(r => r.id === r2.id);
+    expect(followUpRun.refId).toBeNull();
+  });
+
+  it('stores refId in registry', () => {
+    const r1 = run('test');
+    const oc = outcome(r1, 'fail');
+    const a = act(oc, 'retry');
+    const r2 = run(a, 'test-followup');
+    const data = runRegistry.get(r2.id);
+    expect(data.refId).toBe(a.id);
   });
 });

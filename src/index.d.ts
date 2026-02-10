@@ -47,6 +47,11 @@ export interface OutcomeOptions {
   metadata?: Record<string, any>;
 }
 
+export interface Act {
+  readonly id: string;
+  readonly _type: 'act';
+}
+
 
 /**
  * Wrap an LLM client to automatically track every API call.
@@ -56,6 +61,8 @@ export function warp<T>(client: T, options?: WarpOptions): T;
 
 /** Create a run — the top-level unit that tracks one agent execution. */
 export function run(label: string, options?: RunOptions): Run;
+/** Create a follow-up run from an act. */
+export function run(act: Act | string, label: string, options?: RunOptions): Run;
 
 /** Create a group — a logical phase or step inside a run. */
 export function group(label: string, options?: GroupOptions): Group;
@@ -70,15 +77,15 @@ export function outcome(
   options?: OutcomeOptions,
 ): Outcome | undefined;
 
-/** Record an action taken on an outcome (e.g. acting on feedback). */
+/** Record an action taken on an outcome. Returns an Act handle for use with run(). */
 export function act(
   target: Outcome | string,
   name: string,
   metadata?: Record<string, any>,
-): void;
+): Act | undefined;
 
 /** Resolve any trackable target to its string ID. */
-export function ref(target: Run | Group | Outcome | object | string): string | undefined;
+export function ref(target: Run | Group | Act | Outcome | object | string): string | undefined;
 
 /** Manually flush pending events to the API. */
 export function flush(): Promise<void>;

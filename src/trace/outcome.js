@@ -19,9 +19,9 @@ import { logOutcome, getConfig } from '../core/transport.js';
  * @returns {{ id: string, _type: 'outcome' } | undefined}
  */
 export function outcome(target, name, options = {}) {
-  const targetId = getRef(target);
+  const refId = getRef(target);
 
-  if (!targetId) {
+  if (!refId) {
     if (getConfig().debug) console.warn('[warpmetrics] outcome() — target not tracked.');
     return undefined;
   }
@@ -30,7 +30,7 @@ export function outcome(target, name, options = {}) {
 
   logOutcome({
     id,
-    targetId,
+    refId,
     name,
     reason:   options.reason   || null,
     source:   options.source   || null,

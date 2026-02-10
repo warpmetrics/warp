@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warp, run, group, ref } from '../index.js';
+import { warp, run, group, outcome, act, ref } from '../index.js';
 import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE } from '../../test/setup.js';
 
 setupBeforeEach();
@@ -26,6 +26,14 @@ describe('ref()', () => {
 
     const id = ref(response);
     expect(id).toMatch(/^wm_call_/);
+  });
+
+  it('extracts id from Act', () => {
+    const r = run('test');
+    const oc = outcome(r, 'fail');
+    const a = act(oc, 'retry');
+    expect(ref(a)).toBe(a.id);
+    expect(ref(a)).toMatch(/^wm_act_/);
   });
 
   it('returns undefined for unknown objects', () => {

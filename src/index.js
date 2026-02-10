@@ -3,10 +3,11 @@
 //
 //   warp(client, options?)           — wrap an LLM client
 //   run(label, options?)             — create a run
+//   run(act, label, options?)        — create a follow-up run from an act
 //   group(label, options?)           — create a group
 //   add(target, ...items)            — add groups / calls to a run or group
 //   outcome(target, name, options?)  — record a result
-//   act(target, name, options?)      — record an action taken on a result
+//   act(target, name, metadata?)     — record an action, returns act ref
 //   ref(target)                      — get tracking ID
 export { warp } from './core/warp.js';
 export { run } from './trace/run.js';

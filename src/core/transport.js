@@ -159,6 +159,7 @@ export function logRun(data) {
     label: data.label,
     link: data.link,
     name: data.name,
+    refId: data.refId || null,
     timestamp: new Date().toISOString(),
   });
 }
@@ -188,7 +189,7 @@ export function logLink(data) {
 export function logOutcome(data) {
   enqueue('outcomes', {
     id: data.id,
-    targetId: data.targetId,
+    refId: data.refId,
     name: data.name,
     reason: data.reason,
     source: data.source,
@@ -200,7 +201,8 @@ export function logOutcome(data) {
 
 export function logAct(data) {
   enqueue('acts', {
-    targetId: data.targetId,
+    id: data.id,
+    refId: data.refId,
     name: data.name,
     metadata: data.metadata,
     timestamp: new Date().toISOString(),
