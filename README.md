@@ -14,30 +14,29 @@ npm install @warpmetrics/warp
 
 ```js
 import OpenAI from 'openai';
-import { warp, run, group, add, outcome } from '@warpmetrics/warp';
+import { warp, run, group, call, outcome } from '@warpmetrics/warp';
 
 const openai = warp(new OpenAI(), { apiKey: 'wm_...' });
 
 const r = run('code-review', { name: 'Review PR #42' });
-const planning = group('planning');
+const planning = group(r, 'planning');
 
 const response = await openai.chat.completions.create({
   model: 'gpt-4o',
   messages: [{ role: 'user', content: 'Review this PR...' }],
 });
 
-add(planning, response);
-add(r, planning);
+call(planning, response);
 outcome(r, 'completed', { reason: 'Approved' });
 ```
 
-Every LLM call is automatically tracked. You structure the execution with `run` and `group`, then record the result with `outcome`.
+Every LLM call is captured by `warp()` but only sent to the API when you explicitly `call()` it into a run or group. Unclaimed responses are never transmitted.
 
 ## API
 
-### `warp(client, options?)`
+### `warp(client, opts?)`
 
-Wrap an OpenAI or Anthropic client. Every call to `.chat.completions.create()` or `.messages.create()` is automatically intercepted and tracked.
+Wrap an OpenAI or Anthropic client. Every call to `.chat.completions.create()` or `.messages.create()` is automatically intercepted and buffered.
 
 ```js
 const openai = warp(new OpenAI(), { apiKey: 'wm_...' });
@@ -55,7 +54,7 @@ Options are only needed on the first call. After that, config is shared across a
 | `flushInterval` | `number` | `1000` | Auto-flush interval in ms |
 | `maxBatchSize` | `number` | `100` | Max events per batch |
 
-### `run(label, options?)`
+### `run(label, opts?)`
 
 Create a run — the top-level unit that tracks one agent execution.
 
@@ -63,46 +62,59 @@ Create a run — the top-level unit that tracks one agent execution.
 const r = run('code-review', { name: 'PR #42', link: 'https://github.com/org/repo/pull/42' });
 ```
 
-### `group(label, options?)`
+### `run(act, label, opts?)`
 
-Create a group — a logical phase or step inside a run.
-
-```js
-const planning = group('planning', { name: 'Planning phase' });
-const coding = group('coding');
-```
-
-### `add(target, ...items)`
-
-Link groups or LLM responses to a run or group.
+Create a follow-up run from an act (the result of acting on an outcome).
 
 ```js
-add(planning, response1, response2);  // LLM responses to a group
-add(r, planning, coding);             // groups to a run
-add(planning, subGroup);              // groups can nest
+const r2 = run(a, 'code-review', { name: 'Retry' });
 ```
 
-### `outcome(target, name, options?)`
+### `group(target, label, opts?)`
+
+Create a group — a logical phase or step inside a run or group.
+
+```js
+const planning = group(r, 'planning', { name: 'Planning phase' });
+const coding = group(r, 'coding');
+const subStep = group(planning, 'sub-step');  // groups can nest
+```
+
+### `call(target, response, opts?)`
+
+Track an LLM call by linking a buffered response to a run or group.
+
+```js
+const response = await openai.chat.completions.create({ model: 'gpt-4o', messages });
+call(r, response);
+call(g, response, { label: 'extract' });  // with opts
+```
+
+### `outcome(target, name, opts?)`
 
 Record an outcome on any tracked target.
 
 ```js
-outcome(r, 'completed', {
-  reason: 'All checks passed',
-  source: 'ci',
-  tags: ['approved'],
-  metadata: { reviewer: 'alice' },
-});
+outcome(r, 'completed', { reason: 'All checks passed', source: 'ci' });
+```
+
+### `act(target, name, opts?)`
+
+Record an action taken on an outcome. Returns an act handle that can be passed to `run()` for follow-ups.
+
+```js
+const oc = outcome(r, 'failed', { reason: 'Tests failed' });
+const a = act(oc, 'retry', { strategy: 'fix-and-rerun' });
+const r2 = run(a, 'code-review');
 ```
 
 ### `ref(target)`
 
-Resolve any target (run, group, or LLM response) to its string ID. Useful for passing IDs to your frontend or storing them.
+Resolve any target (run, group, or LLM response) to its string ID.
 
 ```js
 ref(r)         // 'wm_run_01jkx3ndek0gh4r5tmqp9a3bcv'
 ref(response)  // 'wm_call_01jkx3ndef8mn2q7kpvhc4e9ws'
-ref('wm_run_01jkx3ndek0gh4r5tmqp9a3bcv')  // pass-through
 ```
 
 ### `flush()`

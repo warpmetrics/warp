@@ -10,5 +10,5 @@ export const groupRegistry = new Map();
 /** @type {Map<string, object>}  act id → act data */
 export const actRegistry = new Map();
 
-/** @type {WeakMap<object, string>}  LLM response object → call id */
+/** @type {WeakMap<object, { id: string, data: object }>}  LLM response object → buffered call */
 export const responseRegistry = new WeakMap();

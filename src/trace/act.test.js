@@ -52,7 +52,8 @@ describe('act()', () => {
   });
 
   it('rejects group targets silently and returns undefined', async () => {
-    const g = group('page');
+    const r = run('test');
+    const g = group(r, 'page');
     const result = act(g, 'improve-section');
     expect(result).toBeUndefined();
     await flush();
@@ -66,7 +67,7 @@ describe('act()', () => {
     expect(result).toBeUndefined();
   });
 
-  it('works without metadata', async () => {
+  it('works without opts', async () => {
     const r = run('test');
     const oc = outcome(r, 'feedback-negative');
     act(oc, 'improve-section');
@@ -75,10 +76,10 @@ describe('act()', () => {
     const body = parseFlushedBody(0);
     const a = body.acts[0];
     expect(a.name).toBe('improve-section');
-    expect(a.metadata).toBeNull();
+    expect(a.opts).toBeNull();
   });
 
-  it('includes metadata when provided', async () => {
+  it('includes opts when provided', async () => {
     const r = run('test');
     const oc = outcome(r, 'feedback-negative');
     act(oc, 'improve-section', {
@@ -90,8 +91,8 @@ describe('act()', () => {
     const body = parseFlushedBody(0);
     const a = body.acts[0];
     expect(a.refId).toBe(oc.id);
-    expect(a.metadata.diff).toEqual({ before: 'old', after: 'new' });
-    expect(a.metadata.learnings).toEqual(['be specific']);
+    expect(a.opts.diff).toEqual({ before: 'old', after: 'new' });
+    expect(a.opts.learnings).toEqual(['be specific']);
   });
 
   it('can be called multiple times on the same outcome', async () => {

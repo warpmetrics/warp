@@ -9,19 +9,17 @@ import { logRun, getConfig } from '../core/transport.js';
  * Create a run — the top-level unit that tracks one agent execution.
  *
  * @param {string | { id: string, _type: 'act' }} labelOrRef — run label, or act ref for follow-up runs
- * @param {string | object} [labelOrOpts] — label (if first arg is act ref) or options
- * @param {object} [maybeOpts]
- * @param {string} [maybeOpts.link]  — external reference ("ticket:PROJ-101", PR URL, etc.)
- * @param {string} [maybeOpts.name]  — human-readable name
+ * @param {string | Record<string, any>} [labelOrOpts] — label (if first arg is act ref) or opts
+ * @param {Record<string, any>} [maybeOpts]
  * @returns {{ readonly id: string, readonly _type: 'run' }}
  */
 export function run(labelOrRef, labelOrOpts, maybeOpts) {
   let refId = null;
-  let label, options;
+  let label, opts;
 
   if (typeof labelOrRef === 'string' && !labelOrRef.startsWith('wm_act_')) {
     label = labelOrRef;
-    options = labelOrOpts || {};
+    opts = labelOrOpts || null;
   } else {
     refId = getRef(labelOrRef);
     if (refId && !refId.startsWith('wm_act_')) {
@@ -29,7 +27,7 @@ export function run(labelOrRef, labelOrOpts, maybeOpts) {
       refId = null;
     }
     label = labelOrOpts;
-    options = maybeOpts || {};
+    opts = maybeOpts || null;
   }
 
   const id = generateId('run');
@@ -37,8 +35,7 @@ export function run(labelOrRef, labelOrOpts, maybeOpts) {
   const data = {
     id,
     label,
-    link: options.link || null,
-    name: options.name || null,
+    opts,
     refId,
     groups: [],
     calls: [],

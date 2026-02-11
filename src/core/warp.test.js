@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { warp, flush } from '../index.js';
+import { warp, run, call, flush } from '../index.js';
 import { responseRegistry } from '../core/registry.js';
 import {
   setupBeforeEach, parseFlushedBody,
@@ -10,7 +10,7 @@ import {
 setupBeforeEach();
 
 describe('warp() — OpenAI', () => {
-  it('intercepts chat.completions.create and tracks the call', async () => {
+  it('intercepts chat.completions.create and buffers the call', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const wrapped = warp(client);
 
@@ -22,6 +22,23 @@ describe('warp() — OpenAI', () => {
     expect(result.choices[0].message.content).toBe('Hello!');
     expect(responseRegistry.has(result)).toBe(true);
 
+    // Call data is buffered, not emitted yet
+    await flush();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('emits call event when call() is used', async () => {
+    const client = createMockOpenAI(OPENAI_RESPONSE);
+    const wrapped = warp(client);
+
+    const result = await wrapped.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'Hi' }],
+    });
+
+    const r = run('test');
+    call(r, result);
+
     await flush();
     const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
@@ -30,15 +47,24 @@ describe('warp() — OpenAI', () => {
     expect(body.calls[0].status).toBe('success');
   });
 
-  it('tracks errors without swallowing them', async () => {
+  it('buffers errors on the thrown error object', async () => {
     const error = new Error('Rate limit exceeded');
     const client = createMockOpenAI(null);
     client.chat.completions.create = vi.fn().mockRejectedValue(error);
     const wrapped = warp(client);
 
-    await expect(
-      wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] })
-    ).rejects.toThrow('Rate limit exceeded');
+    let caught;
+    try {
+      await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] });
+    } catch (e) {
+      caught = e;
+    }
+
+    expect(caught.message).toBe('Rate limit exceeded');
+    expect(caught._warpResponse).toBeDefined();
+
+    const r = run('test');
+    call(r, caught._warpResponse);
 
     await flush();
     const body = parseFlushedBody(0);
@@ -54,7 +80,7 @@ describe('warp() — OpenAI', () => {
 });
 
 describe('warp() — OpenAI Responses API', () => {
-  it('intercepts responses.create and tracks the call', async () => {
+  it('intercepts responses.create and buffers the call', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE, OPENAI_RESPONSES_API_RESPONSE);
     const wrapped = warp(client);
 
@@ -65,6 +91,9 @@ describe('warp() — OpenAI Responses API', () => {
 
     expect(result.output_text).toBe('Hello from Responses API!');
     expect(responseRegistry.has(result)).toBe(true);
+
+    const r = run('test');
+    call(r, result);
 
     await flush();
     const body = parseFlushedBody(0);
@@ -77,7 +106,7 @@ describe('warp() — OpenAI Responses API', () => {
 });
 
 describe('warp() — OpenAI streaming', () => {
-  it('wraps stream and tracks the call after iteration', async () => {
+  it('wraps stream and buffers the call after iteration', async () => {
     const chunks = [
       { choices: [{ delta: { content: 'Hel' } }] },
       { choices: [{ delta: { content: 'lo!' } }] },
@@ -99,6 +128,9 @@ describe('warp() — OpenAI streaming', () => {
 
     expect(received).toHaveLength(3);
 
+    const r = run('test');
+    call(r, stream);
+
     await flush();
     const body = parseFlushedBody(0);
     expect(body.calls).toHaveLength(1);
@@ -109,7 +141,7 @@ describe('warp() — OpenAI streaming', () => {
 });
 
 describe('warp() — Anthropic', () => {
-  it('intercepts messages.create and tracks the call', async () => {
+  it('intercepts messages.create and buffers the call', async () => {
     const client = createMockAnthropic(ANTHROPIC_RESPONSE);
     const wrapped = warp(client);
 
@@ -120,6 +152,9 @@ describe('warp() — Anthropic', () => {
 
     expect(result.content[0].text).toBe('Hello from Claude!');
     expect(responseRegistry.has(result)).toBe(true);
+
+    const r = run('test');
+    call(r, result);
 
     await flush();
     const body = parseFlushedBody(0);

@@ -15,11 +15,12 @@ describe('ref()', () => {
   });
 
   it('extracts id from Group', () => {
-    const g = group('test');
+    const r = run('test');
+    const g = group(r, 'test');
     expect(ref(g)).toBe(g.id);
   });
 
-  it('resolves LLM response to call id', async () => {
+  it('resolves LLM response to call id (buffered)', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const wrapped = warp(client);
     const response = await wrapped.chat.completions.create({ model: 'gpt-4o-mini', messages: [] });

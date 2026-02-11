@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { warp, run, outcome, flush } from '../index.js';
+import { warp, run, call, outcome, flush } from '../index.js';
 import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../../test/setup.js';
 
 setupBeforeEach();
@@ -14,7 +14,7 @@ describe('outcome()', () => {
     const o = body.outcomes.find(e => e.name === 'completed');
     expect(o).toBeDefined();
     expect(o.refId).toBe(r.id);
-    expect(o.reason).toBe('All good');
+    expect(o.opts).toEqual({ reason: 'All good' });
   });
 
   it('returns an Outcome handle with wm_oc_ id', () => {
@@ -51,7 +51,7 @@ describe('outcome()', () => {
     expect(oc).toBeUndefined();
   });
 
-  it('works on an LLM response', async () => {
+  it('works on an LLM response (via ref)', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const wrapped = warp(client);
     const response = await wrapped.chat.completions.create({ model: 'gpt-4o-mini', messages: [] });

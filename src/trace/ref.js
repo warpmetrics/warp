@@ -19,8 +19,8 @@ export function ref(target) {
   if (target && target._type && target.id) return target.id;
 
   if (target && typeof target === 'object') {
-    const callId = responseRegistry.get(target);
-    if (callId) return callId;
+    const entry = responseRegistry.get(target);
+    if (entry) return entry.id;
   }
 
   return undefined;

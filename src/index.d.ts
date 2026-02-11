@@ -10,7 +10,7 @@ export interface Group {
   readonly _type: 'group';
 }
 
-export interface WarpOptions {
+export interface WarpOpts {
   apiKey?: string;
   baseUrl?: string;
   enabled?: boolean;
@@ -19,32 +19,9 @@ export interface WarpOptions {
   debug?: boolean;
 }
 
-export interface RunOptions {
-  /** External reference (e.g. "ticket:PROJ-101", a PR URL, etc.) */
-  link?: string;
-  /** Human-readable name */
-  name?: string;
-}
-
-export interface GroupOptions {
-  /** Human-readable name */
-  name?: string;
-}
-
 export interface Outcome {
   readonly id: string;
   readonly _type: 'outcome';
-}
-
-export interface OutcomeOptions {
-  /** Why this outcome occurred */
-  reason?: string;
-  /** Who / what recorded this outcome */
-  source?: string;
-  /** Categorisation tags */
-  tags?: string[];
-  /** Arbitrary extra data */
-  metadata?: Record<string, any>;
 }
 
 export interface Act {
@@ -57,31 +34,31 @@ export interface Act {
  * Wrap an LLM client to automatically track every API call.
  * Pass options on the first call to configure the SDK; env vars are used as defaults.
  */
-export function warp<T>(client: T, options?: WarpOptions): T;
+export function warp<T>(client: T, opts?: WarpOpts): T;
 
 /** Create a run — the top-level unit that tracks one agent execution. */
-export function run(label: string, options?: RunOptions): Run;
+export function run(label: string, opts?: Record<string, any>): Run;
 /** Create a follow-up run from an act. */
-export function run(act: Act | string, label: string, options?: RunOptions): Run;
+export function run(act: Act | string, label: string, opts?: Record<string, any>): Run;
 
-/** Create a group — a logical phase or step inside a run. */
-export function group(label: string, options?: GroupOptions): Group;
+/** Create a group — a logical phase or step inside a run or group. */
+export function group(target: Run | Group | string, label: string, opts?: Record<string, any>): Group;
 
-/** Add items (groups or LLM responses) to a run or group. */
-export function add(target: Run | Group | string, ...items: any[]): void;
+/** Track an LLM call by linking a response to a run or group. */
+export function call(target: Run | Group | string, response: object, opts?: Record<string, any>): void;
 
 /** Record an outcome on any tracked target. Returns an Outcome handle for use with act(). */
 export function outcome(
   target: Run | Group | object | string,
   name: string,
-  options?: OutcomeOptions,
+  opts?: Record<string, any>,
 ): Outcome | undefined;
 
 /** Record an action taken on an outcome. Returns an Act handle for use with run(). */
 export function act(
   target: Outcome | string,
   name: string,
-  metadata?: Record<string, any>,
+  opts?: Record<string, any>,
 ): Act | undefined;
 
 /** Resolve any trackable target to its string ID. */

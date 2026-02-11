@@ -10,10 +10,10 @@ import { logAct, getConfig } from '../core/transport.js';
  *
  * @param {{ id: string, _type: 'outcome' } | string} target — Outcome handle from outcome(), or outcome ref string (wm_oc_*)
  * @param {string} name            — action name ("improve-section", "refine-prompt")
- * @param {Record<string, any>} [metadata] — arbitrary extra data
+ * @param {Record<string, any>} [opts]
  * @returns {{ readonly id: string, readonly _type: 'act' } | undefined}
  */
-export function act(target, name, metadata) {
+export function act(target, name, opts) {
   const refId = getRef(target);
 
   if (!refId) {
@@ -29,7 +29,7 @@ export function act(target, name, metadata) {
   const id = generateId('act');
   actRegistry.set(id, { id, refId });
 
-  logAct({ id, refId, name, metadata: metadata || null });
+  logAct({ id, refId, name, opts: opts || null });
 
   return Object.freeze({ id, _type: 'act' });
 }

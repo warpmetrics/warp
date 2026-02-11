@@ -17,8 +17,7 @@ describe('run()', () => {
     const r = run('code-review', { name: 'PR #42', link: 'https://github.com/pr/42' });
     const data = runRegistry.get(r.id);
     expect(data.label).toBe('code-review');
-    expect(data.name).toBe('PR #42');
-    expect(data.link).toBe('https://github.com/pr/42');
+    expect(data.opts).toEqual({ name: 'PR #42', link: 'https://github.com/pr/42' });
     expect(data.refId).toBeNull();
     expect(data.groups).toEqual([]);
     expect(data.calls).toEqual([]);
@@ -55,7 +54,7 @@ describe('run()', () => {
     expect(followUpRun.label).toBe('test-followup');
   });
 
-  it('accepts act ref with options', async () => {
+  it('accepts act ref with opts', async () => {
     const r1 = run('test');
     const oc = outcome(r1, 'fail');
     const a = act(oc, 'retry');
@@ -63,8 +62,7 @@ describe('run()', () => {
 
     const data = runRegistry.get(r2.id);
     expect(data.refId).toBe(a.id);
-    expect(data.name).toBe('Retry Run');
-    expect(data.link).toBe('ticket:42');
+    expect(data.opts).toEqual({ name: 'Retry Run', link: 'ticket:42' });
   });
 
   it('accepts string act ref', async () => {

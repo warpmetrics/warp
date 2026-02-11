@@ -3,7 +3,7 @@
 
 import { generateId } from './utils.js';
 import { responseRegistry } from './registry.js';
-import { logCall, setConfig, getConfig } from './transport.js';
+import { setConfig, getConfig } from './transport.js';
 import * as openai from '../providers/openai.js';
 import * as anthropic from '../providers/anthropic.js';
 
@@ -40,27 +40,33 @@ function createInterceptor(originalFn, context, provider) {
 
       const ext  = provider.extract(result);
 
-      logCall({
-        id: callId, provider: provider.name, model, messages,
-        response: ext.response,
-        tools: tools ? tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
-        toolCalls: ext.toolCalls,
-        tokens: ext.tokens, latency,
-        timestamp: new Date().toISOString(),
-        status: 'success',
+      responseRegistry.set(result, {
+        id: callId,
+        data: {
+          id: callId, provider: provider.name, model, messages,
+          response: ext.response,
+          tools: tools ? tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
+          toolCalls: ext.toolCalls,
+          tokens: ext.tokens, latency,
+          timestamp: new Date().toISOString(),
+          status: 'success',
+        },
       });
-
-      responseRegistry.set(result, callId);
 
       return result;
     } catch (error) {
-      logCall({
-        id: callId, provider: provider.name, model, messages,
-        error: error.message,
-        latency: Date.now() - start,
-        timestamp: new Date().toISOString(),
-        status: 'error',
+      const errorResult = { _warpError: true };
+      responseRegistry.set(errorResult, {
+        id: callId,
+        data: {
+          id: callId, provider: provider.name, model, messages,
+          error: error.message,
+          latency: Date.now() - start,
+          timestamp: new Date().toISOString(),
+          status: 'error',
+        },
       });
+      error._warpResponse = errorResult;
       throw error;
     }
   };
@@ -87,17 +93,18 @@ function wrapStream(stream, ctx) {
         ? ctx.provider.normalizeUsage(usage)
         : { prompt: 0, completion: 0, total: 0 };
 
-      logCall({
-        id: ctx.callId, provider: ctx.provider.name, model: ctx.model, messages: ctx.messages,
-        response: content,
-        tools: ctx.tools ? ctx.tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
-        tokens,
-        latency: Date.now() - ctx.start,
-        timestamp: new Date().toISOString(),
-        status: 'success',
+      responseRegistry.set(wrapped, {
+        id: ctx.callId,
+        data: {
+          id: ctx.callId, provider: ctx.provider.name, model: ctx.model, messages: ctx.messages,
+          response: content,
+          tools: ctx.tools ? ctx.tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
+          tokens,
+          latency: Date.now() - ctx.start,
+          timestamp: new Date().toISOString(),
+          status: 'success',
+        },
       });
-
-      responseRegistry.set(wrapped, ctx.callId);
     },
   };
   return wrapped;
@@ -111,25 +118,25 @@ function wrapStream(stream, ctx) {
  * Wrap an LLM client to automatically track every API call.
  *
  * @param {object} client  — OpenAI or Anthropic client instance
- * @param {object} [options]
- * @param {string} [options.apiKey]
- * @param {string} [options.baseUrl]
- * @param {boolean} [options.enabled]
- * @param {number} [options.flushInterval]
- * @param {number} [options.maxBatchSize]
- * @param {boolean} [options.debug]
+ * @param {object} [opts]
+ * @param {string} [opts.apiKey]
+ * @param {string} [opts.baseUrl]
+ * @param {boolean} [opts.enabled]
+ * @param {number} [opts.flushInterval]
+ * @param {number} [opts.maxBatchSize]
+ * @param {boolean} [opts.debug]
  * @returns {object} — the same client, proxied
  */
-export function warp(client, options) {
-  if (options) {
+export function warp(client, opts) {
+  if (opts) {
     const cfg = getConfig();
     setConfig({
-      apiKey:        options.apiKey        ?? cfg.apiKey,
-      baseUrl:       options.baseUrl       ?? cfg.baseUrl,
-      enabled:       options.enabled       ?? cfg.enabled,
-      flushInterval: options.flushInterval ?? cfg.flushInterval,
-      maxBatchSize:  options.maxBatchSize  ?? cfg.maxBatchSize,
-      debug:         options.debug         ?? cfg.debug,
+      apiKey:        opts.apiKey        ?? cfg.apiKey,
+      baseUrl:       opts.baseUrl       ?? cfg.baseUrl,
+      enabled:       opts.enabled       ?? cfg.enabled,
+      flushInterval: opts.flushInterval ?? cfg.flushInterval,
+      maxBatchSize:  opts.maxBatchSize  ?? cfg.maxBatchSize,
+      debug:         opts.debug         ?? cfg.debug,
     });
   }
 
