@@ -64,7 +64,7 @@ describe('warp() — OpenAI', () => {
     expect(caught._warpResponse).toBeDefined();
 
     const r = run('test');
-    call(r, caught._warpResponse);
+    call(r, caught); // Auto-extracts _warpResponse
 
     await flush();
     const body = parseFlushedBody(0);

@@ -24,7 +24,10 @@ export function call(target, response, opts) {
     return;
   }
 
-  const entry = responseRegistry.get(response);
+  // Auto-extract _warpResponse if present (error case)
+  const actualResponse = response?._warpResponse || response;
+
+  const entry = responseRegistry.get(actualResponse);
   if (!entry) {
     if (getConfig().debug) console.warn('[warpmetrics] call() — response not tracked. Was it from a warp()-ed client?');
     return;
@@ -37,5 +40,5 @@ export function call(target, response, opts) {
   logLink({ parentId: targetId, childId: id, type: 'call' });
   parentData.calls.push(id);
 
-  responseRegistry.delete(response);
+  responseRegistry.delete(actualResponse);
 }
