@@ -40,6 +40,28 @@ describe('group()', () => {
     expect(link.type).toBe('group');
   });
 
+  it('creates group with external string ID (cross-process)', async () => {
+    const externalRunId = 'wm_run_external123';
+    const g = group(externalRunId, 'Review 2', { round: 2 });
+
+    expect(g.id).toMatch(/^wm_grp_/);
+    expect(g._type).toBe('group');
+
+    const data = groupRegistry.get(g.id);
+    expect(data.label).toBe('Review 2');
+    expect(data.parentId).toBe(externalRunId);
+    expect(data.opts).toEqual({ round: 2 });
+
+    await flush();
+    const body = parseFlushedBody(0);
+    expect(body.groups).toHaveLength(1);
+    expect(body.groups[0].label).toBe('Review 2');
+    const link = body.links.find(l => l.childId === g.id);
+    expect(link).toBeDefined();
+    expect(link.parentId).toBe(externalRunId);
+    expect(link.type).toBe('group');
+  });
+
   it('nests groups inside groups', async () => {
     const r = run('test');
     const parent = group(r, 'outer');

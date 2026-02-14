@@ -19,10 +19,6 @@ export function call(target, response, opts) {
   }
 
   const parentData = runRegistry.get(targetId) || groupRegistry.get(targetId);
-  if (!parentData) {
-    if (getConfig().debug) console.warn(`[warpmetrics] call() — target not in registry: ${targetId}`);
-    return;
-  }
 
   // Auto-extract _warpResponse if present (error case)
   const actualResponse = response?._warpResponse || response;
@@ -38,7 +34,7 @@ export function call(target, response, opts) {
 
   logCall(data);
   logLink({ parentId: targetId, childId: id, type: 'call' });
-  parentData.calls.push(id);
+  if (parentData) parentData.calls.push(id);
 
   responseRegistry.delete(actualResponse);
 }

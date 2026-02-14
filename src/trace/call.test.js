@@ -55,13 +55,20 @@ describe('call()', () => {
     expect(body.calls[0].opts).toEqual({ label: 'extract' });
   });
 
-  it('ignores unrecognised targets', async () => {
+  it('links LLM response to external string ID (cross-process)', async () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const wrapped = warp(client);
     const response = await wrapped.chat.completions.create({ model: 'gpt-4o-mini', messages: [] });
 
-    call('not-a-target', response);
-    // no error thrown, silently ignored
+    const externalGroupId = 'wm_grp_external456';
+    call(externalGroupId, response);
+
+    await flush();
+    const body = parseFlushedBody(0);
+    expect(body.calls).toHaveLength(1);
+    expect(body.links).toHaveLength(1);
+    expect(body.links[0].parentId).toBe(externalGroupId);
+    expect(body.links[0].type).toBe('call');
   });
 
   it('ignores untracked responses', () => {

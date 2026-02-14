@@ -21,10 +21,6 @@ export function group(target, label, opts) {
   }
 
   const parentData = runRegistry.get(targetId) || groupRegistry.get(targetId);
-  if (!parentData) {
-    if (getConfig().debug) console.warn(`[warpmetrics] group() — target not in registry: ${targetId}`);
-    return Object.freeze({ id: generateId('grp'), _type: 'group' });
-  }
 
   const id = generateId('grp');
 
@@ -38,7 +34,7 @@ export function group(target, label, opts) {
   };
 
   groupRegistry.set(id, data);
-  parentData.groups.push(id);
+  if (parentData) parentData.groups.push(id);
 
   logGroup(data);
   logLink({ parentId: targetId, childId: id, type: 'group' });
