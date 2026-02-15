@@ -2,6 +2,7 @@
 
 import { ref as getRef } from './ref.js';
 import { generateId } from '../core/utils.js';
+import { outcomeRegistry } from '../core/registry.js';
 import { logOutcome, getConfig } from '../core/transport.js';
 
 /**
@@ -23,6 +24,8 @@ export function outcome(target, name, opts) {
   }
 
   const id = generateId('oc');
+
+  outcomeRegistry.set(id, { id, refId, name, opts: opts || null });
 
   logOutcome({
     id,
