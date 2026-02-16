@@ -140,6 +140,31 @@ Need another provider? [Open an issue](https://github.com/warpmetrics/warp/issue
 | `WARPMETRICS_API_URL` | Custom API endpoint |
 | `WARPMETRICS_DEBUG` | Set to `"true"` to enable debug logging |
 
+## Development
+
+### Running tests
+
+```bash
+npm install
+npm test              # unit tests only (integration tests auto-skip)
+npm run test:coverage # with coverage report
+npm run test:watch    # watch mode
+```
+
+### Integration tests
+
+Integration tests make real API calls to OpenAI and Anthropic. They are **automatically skipped** unless the corresponding API keys are set.
+
+To run them:
+
+```bash
+cp .env.example .env
+# Edit .env with your API keys
+npm run test:integration
+```
+
+> **Note:** Integration tests make a small number of API calls with `max_tokens: 5`, so costs are minimal (fractions of a cent per run).
+
 ## License
 
 MIT
