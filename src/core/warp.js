@@ -85,7 +85,9 @@ function wrapStream(stream, ctx) {
       for await (const chunk of stream) {
         const delta = ctx.provider.extractStreamDelta(chunk);
         if (delta.content) content += delta.content;
-        if (delta.usage) usage = delta.usage;
+        if (delta.usage) {
+          usage = usage ? { ...usage, ...delta.usage } : delta.usage;
+        }
         yield chunk;
       }
 
