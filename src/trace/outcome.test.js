@@ -7,11 +7,11 @@ setupBeforeEach();
 describe('outcome()', () => {
   it('enqueues an outcome event for a run', async () => {
     const r = run('test');
-    outcome(r, 'completed', { reason: 'All good' });
+    outcome(r, 'Completed', { reason: 'All good' });
     await flush();
 
     const body = parseFlushedBody(0);
-    const o = body.outcomes.find(e => e.name === 'completed');
+    const o = body.outcomes.find(e => e.name === 'Completed');
     expect(o).toBeDefined();
     expect(o.refId).toBe(r.id);
     expect(o.opts).toEqual({ reason: 'All good' });
@@ -19,7 +19,7 @@ describe('outcome()', () => {
 
   it('returns an Outcome handle with wm_oc_ id', () => {
     const r = run('test');
-    const oc = outcome(r, 'completed');
+    const oc = outcome(r, 'Completed');
 
     expect(oc).toBeDefined();
     expect(oc.id).toMatch(/^wm_oc_/);
@@ -29,16 +29,16 @@ describe('outcome()', () => {
 
   it('includes outcome id in the enqueued event', async () => {
     const r = run('test');
-    const oc = outcome(r, 'completed');
+    const oc = outcome(r, 'Completed');
     await flush();
 
     const body = parseFlushedBody(0);
-    const o = body.outcomes.find(e => e.name === 'completed');
+    const o = body.outcomes.find(e => e.name === 'Completed');
     expect(o.id).toBe(oc.id);
   });
 
   it('works with a ref string', async () => {
-    const oc = outcome('wm_run_abc123', 'shipped');
+    const oc = outcome('wm_run_abc123', 'Shipped');
     await flush();
 
     expect(oc.id).toMatch(/^wm_oc_/);
@@ -56,12 +56,12 @@ describe('outcome()', () => {
     const wrapped = warp(client);
     const response = await wrapped.chat.completions.create({ model: 'gpt-4o-mini', messages: [] });
 
-    const oc = outcome(response, 'helpful');
+    const oc = outcome(response, 'Helpful');
     await flush();
 
     expect(oc.id).toMatch(/^wm_oc_/);
     const body = parseFlushedBody(0);
-    const o = body.outcomes.find(e => e.name === 'helpful');
+    const o = body.outcomes.find(e => e.name === 'Helpful');
     expect(o.refId).toMatch(/^wm_call_/);
   });
 });

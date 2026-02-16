@@ -9,7 +9,7 @@ import { logGroup, logLink, getConfig } from '../core/transport.js';
  * Create a group — a logical phase or step inside a run or another group.
  *
  * @param {object | string} target  — Run, Group, or ref string
- * @param {string} label            — group type used for aggregation ("planner", "coder")
+ * @param {string} label            — group type used for aggregation ("Planner", "Coder")
  * @param {Record<string, any>} [opts]
  * @returns {{ readonly id: string, readonly _type: 'group' }}
  */

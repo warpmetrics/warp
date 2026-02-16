@@ -11,7 +11,7 @@ import { logOutcome, getConfig } from '../core/transport.js';
  * Returns a frozen Outcome handle that can be passed to act().
  *
  * @param {object | string} target — Run, Group, LLM response, or ref string
- * @param {string} name            — outcome name ("completed", "failed", "helpful")
+ * @param {string} name            — outcome name ("Completed", "Failed", "Helpful")
  * @param {Record<string, any>} [opts]
  * @returns {{ id: string, _type: 'outcome' } | undefined}
  */

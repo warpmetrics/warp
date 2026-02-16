@@ -9,7 +9,7 @@ import { logAct, getConfig } from '../core/transport.js';
  * Record an action taken on an outcome (e.g. acting on feedback).
  *
  * @param {{ id: string, _type: 'outcome' } | string} target — Outcome handle from outcome(), or outcome ref string (wm_oc_*)
- * @param {string} name            — action name ("improve-section", "refine-prompt")
+ * @param {string} name            — action name ("Improve Section", "Refine Prompt")
  * @param {Record<string, any>} [opts]
  * @returns {{ readonly id: string, readonly _type: 'act' } | undefined}
  */

@@ -8,7 +8,7 @@ setupBeforeEach();
 describe('group()', () => {
   it('returns a frozen object with id and _type', () => {
     const r = run('test');
-    const g = group(r, 'planner');
+    const g = group(r, 'Planner');
     expect(g.id).toMatch(/^wm_grp_/);
     expect(g._type).toBe('group');
     expect(Object.isFrozen(g)).toBe(true);
@@ -16,15 +16,15 @@ describe('group()', () => {
 
   it('stores data in groupRegistry', () => {
     const r = run('test');
-    const g = group(r, 'planner', { name: 'Planning Phase' });
+    const g = group(r, 'Planner', { name: 'Planning Phase' });
     const data = groupRegistry.get(g.id);
-    expect(data.label).toBe('planner');
+    expect(data.label).toBe('Planner');
     expect(data.opts).toEqual({ name: 'Planning Phase' });
   });
 
   it('links group to run immediately', async () => {
     const r = run('test');
-    const g = group(r, 'step');
+    const g = group(r, 'Step');
 
     const runData = runRegistry.get(r.id);
     expect(runData.groups).toContain(g.id);
@@ -64,8 +64,8 @@ describe('group()', () => {
 
   it('nests groups inside groups', async () => {
     const r = run('test');
-    const parent = group(r, 'outer');
-    const child = group(parent, 'inner');
+    const parent = group(r, 'Outer');
+    const child = group(parent, 'Inner');
 
     const parentData = groupRegistry.get(parent.id);
     expect(parentData.groups).toContain(child.id);

@@ -18,8 +18,8 @@ import { warp, run, group, call, outcome } from '@warpmetrics/warp';
 
 const openai = warp(new OpenAI(), { apiKey: 'wm_...' });
 
-const r = run('code-review', { name: 'Review PR #42' });
-const planning = group(r, 'planning');
+const r = run('Code Review', { name: 'Review PR #42' });
+const planning = group(r, 'Planning');
 
 const response = await openai.chat.completions.create({
   model: 'gpt-4o',
@@ -27,7 +27,7 @@ const response = await openai.chat.completions.create({
 });
 
 call(planning, response);
-outcome(r, 'completed', { reason: 'Approved' });
+outcome(r, 'Completed', { reason: 'Approved' });
 ```
 
 Every LLM call is captured by `warp()` but only sent to the API when you explicitly `call()` it into a run or group. Unclaimed responses are never transmitted.
@@ -59,7 +59,7 @@ Options are only needed on the first call. After that, config is shared across a
 Create a run — the top-level unit that tracks one agent execution.
 
 ```js
-const r = run('code-review', { name: 'PR #42', link: 'https://github.com/org/repo/pull/42' });
+const r = run('Code Review', { name: 'PR #42', link: 'https://github.com/org/repo/pull/42' });
 ```
 
 ### `run(act, label, opts?)`
@@ -67,7 +67,7 @@ const r = run('code-review', { name: 'PR #42', link: 'https://github.com/org/rep
 Create a follow-up run from an act (the result of acting on an outcome).
 
 ```js
-const r2 = run(a, 'code-review', { name: 'Retry' });
+const r2 = run(a, 'Code Review', { name: 'Retry' });
 ```
 
 ### `group(target, label, opts?)`
@@ -75,9 +75,9 @@ const r2 = run(a, 'code-review', { name: 'Retry' });
 Create a group — a logical phase or step inside a run or group.
 
 ```js
-const planning = group(r, 'planning', { name: 'Planning phase' });
-const coding = group(r, 'coding');
-const subStep = group(planning, 'sub-step');  // groups can nest
+const planning = group(r, 'Planning', { name: 'Planning Phase' });
+const coding = group(r, 'Coding');
+const subStep = group(planning, 'Sub Step');  // groups can nest
 ```
 
 ### `call(target, response, opts?)`
@@ -95,7 +95,7 @@ call(g, response, { label: 'extract' });  // with opts
 Record an outcome on any tracked target.
 
 ```js
-outcome(r, 'completed', { reason: 'All checks passed', source: 'ci' });
+outcome(r, 'Completed', { reason: 'All checks passed', source: 'ci' });
 ```
 
 ### `act(target, name, opts?)`
@@ -103,9 +103,9 @@ outcome(r, 'completed', { reason: 'All checks passed', source: 'ci' });
 Record an action taken on an outcome. Returns an act handle that can be passed to `run()` for follow-ups.
 
 ```js
-const oc = outcome(r, 'failed', { reason: 'Tests failed' });
-const a = act(oc, 'retry', { strategy: 'fix-and-rerun' });
-const r2 = run(a, 'code-review');
+const oc = outcome(r, 'Failed', { reason: 'Tests failed' });
+const a = act(oc, 'Retry', { strategy: 'fix-and-rerun' });
+const r2 = run(a, 'Code Review');
 ```
 
 ### `ref(target)`

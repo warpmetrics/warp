@@ -9,8 +9,8 @@ describe('end-to-end', () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     const openai = warp(client);
 
-    const r = run('code-review', { link: 'ticket:123', name: 'Review PR' });
-    const planning = group(r, 'planning', { name: 'Plan Phase' });
+    const r = run('Code Review', { link: 'ticket:123', name: 'Review PR' });
+    const planning = group(r, 'Planning', { name: 'Plan Phase' });
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -18,8 +18,8 @@ describe('end-to-end', () => {
     });
 
     call(planning, response);
-    const oc = outcome(r, 'completed', { reason: 'Looks good', source: 'ci' });
-    const a = act(oc, 'improve-section', { diff: { before: 'old', after: 'new' } });
+    const oc = outcome(r, 'Completed', { reason: 'Looks good', source: 'ci' });
+    const a = act(oc, 'Improve Section', { diff: { before: 'old', after: 'new' } });
 
     expect(ref(r)).toBe(r.id);
     expect(ref(planning)).toBe(planning.id);
@@ -37,11 +37,11 @@ describe('end-to-end', () => {
     expect(body.calls).toHaveLength(1);
     expect(body.links).toHaveLength(2); // group link + call link
     expect(body.outcomes).toHaveLength(1);
-    expect(body.outcomes[0].name).toBe('completed');
+    expect(body.outcomes[0].name).toBe('Completed');
     expect(body.outcomes[0].id).toBe(oc.id);
     expect(body.outcomes[0].refId).toBe(r.id);
     expect(body.acts).toHaveLength(1);
-    expect(body.acts[0].name).toBe('improve-section');
+    expect(body.acts[0].name).toBe('Improve Section');
     expect(body.acts[0].id).toBe(a.id);
     expect(body.acts[0].id).toMatch(/^wm_act_/);
     expect(body.acts[0].refId).toBe(oc.id);
@@ -51,10 +51,10 @@ describe('end-to-end', () => {
     const client = createMockOpenAI(OPENAI_RESPONSE);
     warp(client);
 
-    const r1 = run('code-review');
-    const oc = outcome(r1, 'fail', { reason: 'test' });
-    const a = act(oc, 'retry');
-    const r2 = run(a, 'code-review');
+    const r1 = run('Code Review');
+    const oc = outcome(r1, 'Failed', { reason: 'test' });
+    const a = act(oc, 'Retry');
+    const r2 = run(a, 'Code Review');
 
     await flush();
 
@@ -64,7 +64,7 @@ describe('end-to-end', () => {
     const followUp = body.runs.find(r => r.id === r2.id);
     expect(followUp.refId).toBe(a.id);
     expect(followUp.refId).toMatch(/^wm_act_/);
-    expect(followUp.label).toBe('code-review');
+    expect(followUp.label).toBe('Code Review');
 
     const original = body.runs.find(r => r.id === r1.id);
     expect(original.refId).toBeNull();
