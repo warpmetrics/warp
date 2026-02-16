@@ -21,10 +21,16 @@ export function extract(result) {
 }
 
 export function extractStreamDelta(chunk) {
-  return {
-    content: chunk.type === 'content_block_delta' ? (chunk.delta?.text || null) : null,
-    usage:   chunk.type === 'message_delta' ? (chunk.usage || null) : null,
-  };
+  if (chunk.type === 'content_block_delta') {
+    return { content: chunk.delta?.text || null, usage: null };
+  }
+  if (chunk.type === 'message_start') {
+    return { content: null, usage: chunk.message?.usage || null };
+  }
+  if (chunk.type === 'message_delta') {
+    return { content: null, usage: chunk.usage || null };
+  }
+  return { content: null, usage: null };
 }
 
 export function normalizeUsage(usage) {
