@@ -1,6 +1,9 @@
 // Shared test setup for all co-located test files.
 
+import { config } from 'dotenv';
 import { vi, beforeEach } from 'vitest';
+
+config({ quiet: true });
 import { runRegistry, groupRegistry, actRegistry } from '../src/core/registry.js';
 import { setConfig, clearQueue } from '../src/core/transport.js';
 
