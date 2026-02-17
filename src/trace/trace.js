@@ -17,6 +17,7 @@ export function trace(target, data) {
     return;
   }
 
+  // Run registry takes precedence over group registry when targetId exists in both
   const parentData = runRegistry.get(targetId) || groupRegistry.get(targetId);
 
   const id = generateId('call');
@@ -25,7 +26,7 @@ export function trace(target, data) {
     id,
     provider: data.provider,
     model: data.model,
-    messages: data.messages || [],
+    messages: data.messages || null,
     response: data.response || null,
     tools: data.tools || null,
     toolCalls: data.toolCalls || null,
