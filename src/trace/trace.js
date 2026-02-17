@@ -19,6 +19,10 @@ export function trace(target, data) {
 
   // Run registry takes precedence over group registry when targetId exists in both
   const parentData = runRegistry.get(targetId) || groupRegistry.get(targetId);
+  if (!parentData) {
+    if (getConfig().debug) console.warn('[warpmetrics] trace() — parent not found in registry.');
+    return;
+  }
 
   const id = generateId('call');
 
@@ -31,14 +35,17 @@ export function trace(target, data) {
     tools: data.tools || null,
     toolCalls: data.toolCalls || null,
     tokens: data.tokens || null,
-    latency: data.latency || 0,
+    latency: data.latency ?? null,
     timestamp: data.timestamp || new Date().toISOString(),
     status: data.status || 'success',
   };
 
   if (data.error) event.error = data.error;
   if (data.opts) event.opts = data.opts;
-  if (data.cost != null) event.costOverride = Math.round(data.cost * 1_000_000);
+  if (data.cost != null) {
+    const costNum = Number(data.cost);
+    if (!isNaN(costNum)) event.costOverride = Math.round(costNum * 1_000_000);
+  }
 
   logCall(event);
   logLink({ parentId: targetId, childId: id, type: 'call' });
