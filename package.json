@@ -20,8 +20,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preversion": "vitest run --coverage",
-    "release:patch": "npm version patch && git push origin main --tags",
-    "release:minor": "npm version minor && git push origin main --tags"
+    "release:patch": "npm install && npm version patch && git push origin main --tags",
+    "release:minor": "npm install && npm version minor && git push origin main --tags"
   },
   "keywords": [
     "ai",
