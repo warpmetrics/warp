@@ -63,9 +63,11 @@ export interface TraceData {
   /** Token usage. */
   tokens?: { prompt?: number; completion?: number; total?: number };
   /** Duration in milliseconds. */
-  latency?: number;
-  /** ISO 8601 timestamp (auto-generated if omitted). */
-  timestamp?: string;
+  duration?: number;
+  /** ISO 8601 timestamp of when the call started. Computed from endedAt - duration if omitted. */
+  startedAt?: string;
+  /** ISO 8601 timestamp of when the call ended (auto-generated if omitted). */
+  endedAt?: string;
   /** "success" (default) or "error". */
   status?: string;
   /** Error message. */

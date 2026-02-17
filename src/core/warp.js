@@ -31,8 +31,8 @@ function createInterceptor(originalFn, context, provider) {
     const stream   = args[0]?.stream === true;
 
     try {
-      const result  = await originalFn.apply(context, args);
-      const latency = Date.now() - start;
+      const result   = await originalFn.apply(context, args);
+      const duration = Date.now() - start;
 
       if (stream) {
         return wrapStream(result, { callId, provider, model, messages, tools, start });
@@ -47,8 +47,9 @@ function createInterceptor(originalFn, context, provider) {
           response: ext.response,
           tools: tools ? tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
           toolCalls: ext.toolCalls,
-          tokens: ext.tokens, latency,
-          timestamp: new Date().toISOString(),
+          tokens: ext.tokens, duration,
+          startedAt: new Date(start).toISOString(),
+          endedAt: new Date().toISOString(),
           status: 'success',
         },
       });
@@ -61,8 +62,9 @@ function createInterceptor(originalFn, context, provider) {
         data: {
           id: callId, provider: provider.name, model, messages,
           error: error.message,
-          latency: Date.now() - start,
-          timestamp: new Date().toISOString(),
+          duration: Date.now() - start,
+          startedAt: new Date(start).toISOString(),
+          endedAt: new Date().toISOString(),
           status: 'error',
         },
       });
@@ -102,8 +104,9 @@ function wrapStream(stream, ctx) {
           response: content,
           tools: ctx.tools ? ctx.tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
           tokens,
-          latency: Date.now() - ctx.start,
-          timestamp: new Date().toISOString(),
+          duration: Date.now() - ctx.start,
+          startedAt: new Date(ctx.start).toISOString(),
+          endedAt: new Date().toISOString(),
           status: 'success',
         },
       });
