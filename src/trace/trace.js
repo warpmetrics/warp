@@ -6,6 +6,11 @@ import { runRegistry, groupRegistry } from '../core/registry.js';
 import { logCall, logLink, getConfig } from '../core/transport.js';
 
 export function trace(target, data) {
+  if (!data || !data.provider || !data.model) {
+    if (getConfig().debug) console.warn('[warpmetrics] trace() — data must include provider and model.');
+    return;
+  }
+
   const targetId = getRef(target);
   if (!targetId) {
     if (getConfig().debug) console.warn('[warpmetrics] trace() — target not recognised.');
@@ -36,7 +41,7 @@ export function trace(target, data) {
 
   logCall(event);
   logLink({ parentId: targetId, childId: id, type: 'call' });
-  if (parentData) parentData.calls.push(id);
+  if (parentData?.calls) parentData.calls.push(id);
 
   return Object.freeze({ id, _type: 'call' });
 }
