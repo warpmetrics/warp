@@ -14,7 +14,7 @@ npm install @warpmetrics/warp
 
 ```js
 import OpenAI from 'openai';
-import { warp, run, group, call, outcome } from '@warpmetrics/warp';
+import { warp, run, group, call, trace, outcome } from '@warpmetrics/warp';
 
 const openai = warp(new OpenAI(), { apiKey: 'wm_...' });
 
@@ -90,6 +90,38 @@ call(r, response);
 call(g, response, { label: 'extract' });  // with opts
 ```
 
+### `trace(target, data)`
+
+Manually record an LLM call for providers not wrapped by `warp()`.
+
+```js
+trace(r, {
+  provider: 'google',
+  model: 'gemini-2.0-flash',
+  messages: [{ role: 'user', content: 'Hello' }],
+  response: 'Hi there!',
+  tokens: { prompt: 10, completion: 5 },
+  latency: 230,
+  cost: 0.0001,
+});
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `provider` | `string` | Yes | Provider name (e.g. `"google"`, `"cohere"`) |
+| `model` | `string` | Yes | Model identifier |
+| `messages` | `any` | No | Request messages/input |
+| `response` | `string` | No | Response text |
+| `tools` | `string[]` | No | Tool names available |
+| `toolCalls` | `{ id, name, arguments }[]` | No | Tool calls made |
+| `tokens` | `{ prompt?, completion?, total? }` | No | Token usage |
+| `latency` | `number` | No | Duration in milliseconds |
+| `timestamp` | `string` | No | ISO 8601 timestamp (auto-generated if omitted) |
+| `status` | `string` | No | `"success"` (default) or `"error"` |
+| `error` | `string` | No | Error message |
+| `cost` | `number` | No | Cost in USD |
+| `opts` | `Record<string, any>` | No | Custom metadata |
+
 ### `outcome(target, name, opts?)`
 
 Record an outcome on any tracked target.
@@ -110,11 +142,12 @@ const r2 = run(a, 'Code Review');
 
 ### `ref(target)`
 
-Resolve any target (run, group, or LLM response) to its string ID.
+Resolve any target (run, group, outcome, act, or LLM response) to its string ID. Also accepts raw ID strings (e.g. `"wm_run_..."` loaded from a database) and registers them locally.
 
 ```js
 ref(r)         // 'wm_run_01jkx3ndek0gh4r5tmqp9a3bcv'
 ref(response)  // 'wm_call_01jkx3ndef8mn2q7kpvhc4e9ws'
+ref('wm_run_01jkx3ndek0gh4r5tmqp9a3bcv')  // adopts and returns the ID
 ```
 
 ### `flush()`
