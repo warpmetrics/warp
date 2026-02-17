@@ -47,6 +47,43 @@ export function group(target: Run | Group | string, label: string, opts?: Record
 /** Track an LLM call by linking a response to a run or group. */
 export function call(target: Run | Group | string, response: object, opts?: Record<string, any>): void;
 
+export interface TraceData {
+  /** Provider name (e.g. "google", "cohere"). */
+  provider: string;
+  /** Model identifier. */
+  model: string;
+  /** Request messages/input. */
+  messages?: any;
+  /** Response text. */
+  response?: string;
+  /** Tool names available. */
+  tools?: string[];
+  /** Tool calls made. */
+  toolCalls?: { id?: string; name: string; arguments?: string }[];
+  /** Token usage. */
+  tokens?: { prompt?: number; completion?: number; total?: number };
+  /** Duration in milliseconds. */
+  latency?: number;
+  /** ISO 8601 timestamp (auto-generated if omitted). */
+  timestamp?: string;
+  /** "success" (default) or "error". */
+  status?: string;
+  /** Error message. */
+  error?: string;
+  /** Cost in USD. */
+  cost?: number;
+  /** Custom metadata. */
+  opts?: Record<string, any>;
+}
+
+export interface Call {
+  readonly id: string;
+  readonly _type: 'call';
+}
+
+/** Manually record an LLM call for providers not wrapped by warp(). */
+export function trace(target: Run | Group | string, data: TraceData): Call | undefined;
+
 /** Record an outcome on any tracked target. Returns an Outcome handle for use with act(). */
 export function outcome(
   target: Run | Group | object | string,
