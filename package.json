@@ -1,6 +1,6 @@
 {
   "name": "@warpmetrics/warp",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Measure your agents, not your LLM calls.",
   "type": "module",
   "main": "src/index.js",
