@@ -1,7 +1,7 @@
 // Warpmetrics SDK — reserve()
 
 import { generateId } from './utils.js';
-import { actRegistry } from './registry.js';
+import { actRegistry, runRegistry, groupRegistry, outcomeRegistry } from './registry.js';
 
 /**
  * Reserve an event ID without queueing.
@@ -27,11 +27,12 @@ export function reserve(descriptor) {
   const id = generateId(prefix);
 
   // Register as stub so ref() can resolve it
-  const registryMap = { act: actRegistry };
+  const registryMap = { act: actRegistry, run: runRegistry, group: groupRegistry, outcome: outcomeRegistry };
   const registry = registryMap[descriptor._eventType];
-  if (registry) {
-    registry.set(id, { id, stub: true });
+  if (!registry) {
+    throw new Error(`reserve() — no registry for event type: ${descriptor._eventType}`);
   }
+  registry.set(id, { id, stub: true });
 
   return Object.freeze({
     id,
