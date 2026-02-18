@@ -29,6 +29,22 @@ export interface Act {
   readonly _type: 'act';
 }
 
+/** Descriptor returned by event functions called without a target. */
+export interface Descriptor<T extends string> {
+  readonly _descriptor: true;
+  readonly _eventType: T;
+  readonly name: string;
+  readonly opts: Record<string, any> | null;
+}
+
+/** Reserved event handle with pre-generated ID. */
+export interface ReservedAct {
+  readonly id: string;
+  readonly _type: 'act';
+  readonly name: string;
+  readonly opts: Record<string, any> | null;
+}
+
 
 /**
  * Wrap an LLM client to automatically track every API call.
@@ -99,6 +115,19 @@ export function act(
   name: string,
   opts?: Record<string, any>,
 ): Act | undefined;
+
+/** Create an act descriptor (no outcome yet). Pass to reserve() to get an ID. */
+export function act(name: string, opts?: Record<string, any>): Descriptor<'act'>;
+
+/** Complete a reserved act by providing the outcome. */
+export function act(
+  target: Outcome | string,
+  reserved: ReservedAct,
+  opts?: Record<string, any>,
+): Act | undefined;
+
+/** Reserve an event ID without queueing. Returns a handle with pre-generated ID. */
+export function reserve(descriptor: Descriptor<'act'>): ReservedAct;
 
 /** Resolve any trackable target to its string ID. */
 export function ref(target: Run | Group | Act | Outcome | object | string): string | undefined;
