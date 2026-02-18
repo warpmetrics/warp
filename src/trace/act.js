@@ -45,7 +45,7 @@ export function act(target, nameOrReserved, opts) {
       ? { ...(nameOrReserved.opts || {}), ...opts }
       : (nameOrReserved.opts || null);
 
-    const existing = actRegistry.get(id);
+    const existing = actRegistry.get(id) || {};
     actRegistry.set(id, { ...existing, id, refId });
     logAct({ id, refId, name: nameOrReserved.name, opts: mergedOpts });
 
