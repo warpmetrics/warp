@@ -32,7 +32,7 @@ export function reserve(descriptor) {
   if (!registry) {
     throw new Error(`reserve() — no registry for event type: ${descriptor._eventType}`);
   }
-  registry.set(id, { id, stub: true });
+  registry.set(id, { ...registry.get(id), id, stub: true });
 
   return Object.freeze({
     id,
