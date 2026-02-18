@@ -14,6 +14,7 @@ import { logGroup, logLink, getConfig } from '../core/transport.js';
  * @returns {{ readonly id: string, readonly _type: 'group' }}
  */
 export function group(target, label, opts) {
+  const startedAt = new Date().toISOString();
   const targetId = getRef(target);
   if (!targetId) {
     if (getConfig().debug) console.warn('[warpmetrics] group() — target not recognised.');
@@ -29,6 +30,7 @@ export function group(target, label, opts) {
     label,
     opts: opts || null,
     parentId: targetId,
+    startedAt,
     groups: [],
     calls: [],
   };

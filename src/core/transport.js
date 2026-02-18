@@ -166,7 +166,7 @@ export function logRun(data) {
     label: data.label,
     opts: data.opts || null,
     refId: data.refId || null,
-    startedAt: new Date().toISOString(),
+    startedAt: data.startedAt || new Date().toISOString(),
   });
 }
 
@@ -175,7 +175,7 @@ export function logGroup(data) {
     id: data.id,
     label: data.label,
     opts: data.opts || null,
-    startedAt: new Date().toISOString(),
+    startedAt: data.startedAt || new Date().toISOString(),
   });
 }
 

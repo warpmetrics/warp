@@ -14,6 +14,7 @@ import { logRun, getConfig } from '../core/transport.js';
  * @returns {{ readonly id: string, readonly _type: 'run' }}
  */
 export function run(labelOrRef, labelOrOpts, maybeOpts) {
+  const startedAt = new Date().toISOString();
   let refId = null;
   let label, opts;
 
@@ -37,6 +38,7 @@ export function run(labelOrRef, labelOrOpts, maybeOpts) {
     label,
     opts,
     refId,
+    startedAt,
     groups: [],
     calls: [],
   };
