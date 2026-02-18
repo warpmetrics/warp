@@ -26,6 +26,10 @@ export function trace(target, data) {
 
   const id = generateId('call');
 
+  const endedAt = data.endedAt || data.timestamp || new Date().toISOString();
+  const duration = data.duration ?? data.latency ?? null;
+  const startedAt = data.startedAt || (duration != null ? new Date(new Date(endedAt).getTime() - duration).toISOString() : endedAt);
+
   const event = {
     id,
     provider: data.provider,
@@ -35,8 +39,9 @@ export function trace(target, data) {
     tools: data.tools || null,
     toolCalls: data.toolCalls || null,
     tokens: data.tokens || null,
-    latency: data.latency ?? null,
-    timestamp: data.timestamp || new Date().toISOString(),
+    duration,
+    startedAt,
+    endedAt,
     status: data.status || 'success',
   };
 

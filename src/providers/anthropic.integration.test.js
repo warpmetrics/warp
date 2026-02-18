@@ -32,7 +32,7 @@ describe.skipIf(skip)('Anthropic integration', () => {
     const { data } = responseRegistry.get(result);
     expect(data.provider).toBe('anthropic');
     expect(data.status).toBe('success');
-    expect(data.latency).toBeGreaterThan(0);
+    expect(data.duration).toBeGreaterThan(0);
     expect(data.response).toBeTruthy();
     expect(data.tokens.prompt).toBeGreaterThan(0);
     expect(data.tokens.completion).toBeGreaterThan(0);
