@@ -42,7 +42,7 @@ describe.skipIf(skip)('OpenAI integration', () => {
     expect(data.provider).toBe('openai');
     expect(data.model).toBe('gpt-4o-mini');
     expect(data.status).toBe('success');
-    expect(data.latency).toBeGreaterThan(0);
+    expect(data.duration).toBeGreaterThan(0);
     expect(data.response).toBeTruthy();
     expect(data.tokens.prompt).toBeGreaterThan(0);
     expect(data.tokens.completion).toBeGreaterThan(0);

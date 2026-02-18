@@ -32,13 +32,14 @@ function createInterceptor(originalFn, context, provider) {
 
     try {
       const result  = await originalFn.apply(context, args);
-      const latency = Date.now() - start;
+      const duration = Date.now() - start;
 
       if (stream) {
         return wrapStream(result, { callId, provider, model, messages, tools, start });
       }
 
       const ext  = provider.extract(result);
+      const endedAt = new Date().toISOString();
 
       responseRegistry.set(result, {
         id: callId,
@@ -47,8 +48,9 @@ function createInterceptor(originalFn, context, provider) {
           response: ext.response,
           tools: tools ? tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
           toolCalls: ext.toolCalls,
-          tokens: ext.tokens, latency,
-          timestamp: new Date().toISOString(),
+          tokens: ext.tokens, duration,
+          startedAt: new Date(start).toISOString(),
+          endedAt,
           status: 'success',
         },
       });
@@ -56,13 +58,15 @@ function createInterceptor(originalFn, context, provider) {
       return result;
     } catch (error) {
       const errorResult = { _warpError: true };
+      const duration = Date.now() - start;
       responseRegistry.set(errorResult, {
         id: callId,
         data: {
           id: callId, provider: provider.name, model, messages,
           error: error.message,
-          latency: Date.now() - start,
-          timestamp: new Date().toISOString(),
+          duration,
+          startedAt: new Date(start).toISOString(),
+          endedAt: new Date().toISOString(),
           status: 'error',
         },
       });
@@ -95,6 +99,7 @@ function wrapStream(stream, ctx) {
         ? ctx.provider.normalizeUsage(usage)
         : { prompt: 0, completion: 0, total: 0 };
 
+      const duration = Date.now() - ctx.start;
       responseRegistry.set(wrapped, {
         id: ctx.callId,
         data: {
@@ -102,8 +107,9 @@ function wrapStream(stream, ctx) {
           response: content,
           tools: ctx.tools ? ctx.tools.map(t => t.function?.name || t.name).filter(Boolean) : null,
           tokens,
-          latency: Date.now() - ctx.start,
-          timestamp: new Date().toISOString(),
+          duration,
+          startedAt: new Date(ctx.start).toISOString(),
+          endedAt: new Date().toISOString(),
           status: 'success',
         },
       });
