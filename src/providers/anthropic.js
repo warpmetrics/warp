@@ -15,7 +15,7 @@ export function extract(result) {
     response: Array.isArray(result?.content)
       ? result.content.filter(c => c.type === 'text').map(c => c.text).join('')
       : '',
-    tokens: { prompt: input, completion: output, total: input + output, cacheWrite, cacheRead },
+    tokens: { prompt: input + cacheWrite + cacheRead, completion: output, total: input + output + cacheWrite + cacheRead, cacheWrite, cacheRead },
     toolCalls: null,
   };
 }
@@ -38,7 +38,7 @@ export function normalizeUsage(usage) {
   const completion = usage?.output_tokens || 0;
   const cacheWrite = usage?.cache_creation_input_tokens || 0;
   const cacheRead  = usage?.cache_read_input_tokens || 0;
-  return { prompt, completion, total: prompt + completion, cacheWrite, cacheRead };
+  return { prompt: prompt + cacheWrite + cacheRead, completion, total: prompt + completion + cacheWrite + cacheRead, cacheWrite, cacheRead };
 }
 
 export function proxy(client, intercept) {
