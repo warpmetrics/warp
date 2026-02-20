@@ -15,7 +15,7 @@ describe('anthropic provider', () => {
       expect(ext.tokens.total).toBe(15);
     });
 
-    it('extracts cache tokens', () => {
+    it('extracts cache tokens and includes them in prompt and total', () => {
       const result = {
         content: [{ type: 'text', text: 'Hi' }],
         usage: {
@@ -28,6 +28,10 @@ describe('anthropic provider', () => {
       const ext = extract(result);
       expect(ext.tokens.cacheWrite).toBe(3);
       expect(ext.tokens.cacheRead).toBe(2);
+      // prompt includes input_tokens + cacheWrite + cacheRead
+      expect(ext.tokens.prompt).toBe(15);
+      // total includes all input + output
+      expect(ext.tokens.total).toBe(20);
     });
 
     it('returns empty string when content is not an array', () => {
@@ -73,7 +77,7 @@ describe('anthropic provider', () => {
   });
 
   describe('normalizeUsage', () => {
-    it('normalizes usage with cache tokens', () => {
+    it('normalizes usage with cache tokens included in prompt and total', () => {
       const usage = {
         input_tokens: 10,
         output_tokens: 5,
@@ -81,9 +85,11 @@ describe('anthropic provider', () => {
         cache_read_input_tokens: 2,
       };
       const result = normalizeUsage(usage);
-      expect(result.prompt).toBe(10);
+      // prompt includes input_tokens + cacheWrite + cacheRead
+      expect(result.prompt).toBe(15);
       expect(result.completion).toBe(5);
-      expect(result.total).toBe(15);
+      // total includes all input + output
+      expect(result.total).toBe(20);
       expect(result.cacheWrite).toBe(3);
       expect(result.cacheRead).toBe(2);
     });
