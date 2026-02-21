@@ -1,4 +1,4 @@
-// Warpmetrics SDK — Registries
+  // Warpmetrics SDK — Registries
 // Module-level state that tracks runs, groups, and calls in memory.
 
 /** @type {Map<string, object>}  run id → run data */

@@ -49,7 +49,7 @@ export function trace(target, data) {
   if (data.opts) event.opts = data.opts;
   if (data.cost != null) {
     const costNum = Number(data.cost);
-    if (!isNaN(costNum)) event.costOverride = Math.round(costNum * 1_000_000);
+    if (!isNaN(costNum)) event.cost = costNum;
   }
 
   logCall(event);

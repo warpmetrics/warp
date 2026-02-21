@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { warp, run, group, call, flush } from '../index.js';
 import { runRegistry, groupRegistry } from '../core/registry.js';
-import { setupBeforeEach, createMockOpenAI, OPENAI_RESPONSE, parseFlushedBody } from '../../test/setup.js';
+import { setupBeforeEach, createMockOpenAI, createMockAnthropic, OPENAI_RESPONSE, parseFlushedBody } from '../../test/setup.js';
 
 setupBeforeEach();
 
@@ -104,5 +104,61 @@ describe('call()', () => {
 
     const data = runRegistry.get(r.id);
     expect(data.calls).toHaveLength(1);
+  });
+
+  it('records error calls with no tokens', async () => {
+    const client = createMockOpenAI(null);
+    client.chat.completions.create = vi.fn().mockRejectedValue(new Error('Rate limited'));
+    const wrapped = warp(client);
+
+    let caught;
+    try {
+      await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] });
+    } catch (e) { caught = e; }
+
+    const r = run('test');
+    call(r, caught);
+
+    await flush();
+    const body = parseFlushedBody(0);
+    const c = body.calls[0];
+    expect(c.status).toBe('error');
+    expect(c.error).toBe('Rate limited');
+    expect(c.tokens).toBeUndefined();
+  });
+
+  it('tracks separate token counts per call', async () => {
+    const response1 = {
+      content: [{ type: 'text', text: 'First' }],
+      usage: { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 30 },
+    };
+    const response2 = {
+      content: [{ type: 'text', text: 'Second' }],
+      usage: { input_tokens: 200, output_tokens: 80 },
+    };
+
+    const client1 = createMockAnthropic(response1);
+    const wrapped1 = warp(client1);
+    const result1 = await wrapped1.messages.create({ model: 'claude-sonnet-4-5-20250929', messages: [] });
+
+    const client2 = createMockAnthropic(response2);
+    const wrapped2 = warp(client2);
+    const result2 = await wrapped2.messages.create({ model: 'claude-sonnet-4-5-20250929', messages: [] });
+
+    const r = run('test');
+    call(r, result1);
+    call(r, result2);
+
+    await flush();
+    const body = parseFlushedBody(0);
+    expect(body.calls).toHaveLength(2);
+
+    const c1 = body.calls[0];
+    expect(c1.tokens.prompt).toBe(130); // 100 + 30
+    expect(c1.tokens.cacheRead).toBe(30);
+
+    const c2 = body.calls[1];
+    expect(c2.tokens.prompt).toBe(200);
+    expect(c2.tokens.cacheRead).toBe(0);
   });
 });
