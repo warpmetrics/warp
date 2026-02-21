@@ -23,7 +23,7 @@ describe('transport', () => {
     global.fetch.mockRejectedValueOnce(new Error('Network error'));
 
     run('test');
-    await flush();
+    await expect(flush()).rejects.toThrow('Network error');
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
     global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });

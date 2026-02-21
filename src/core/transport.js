@@ -139,20 +139,14 @@ export async function flush() {
     if (config.debug) {
       console.error('[warpmetrics] Flush failed:', err.message);
     }
-    // Only re-queue if it's not a rate limit error (429)
-    // Rate limit errors should wait for the next flush interval
-    const isRateLimit = err.message?.includes('429') || err.message?.includes('RATE_LIMIT');
-    if (!isRateLimit) {
-      // Re-queue so nothing is lost.
-      queue.runs.unshift(...batch.runs);
-      queue.groups.unshift(...batch.groups);
-      queue.calls.unshift(...batch.calls);
-      queue.links.unshift(...batch.links);
-      queue.outcomes.unshift(...batch.outcomes);
-      queue.acts.unshift(...batch.acts);
-    } else if (config.debug) {
-      console.warn('[warpmetrics] Rate limited - discarding batch to avoid retry loop. Will retry on next flush.');
-    }
+    // Re-queue so nothing is lost.
+    queue.runs.unshift(...batch.runs);
+    queue.groups.unshift(...batch.groups);
+    queue.calls.unshift(...batch.calls);
+    queue.links.unshift(...batch.links);
+    queue.outcomes.unshift(...batch.outcomes);
+    queue.acts.unshift(...batch.acts);
+    throw err;
   }
 }
 
