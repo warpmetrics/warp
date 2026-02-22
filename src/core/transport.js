@@ -26,6 +26,17 @@ const queue = {
 
 let flushTimeout = null;
 
+// Backoff state for 429 retry
+let backoff = {
+  active: false,
+  delay: 0,       // current delay in ms
+  retries: 0,
+};
+
+const BACKOFF_BASE = 2000;   // 2s initial backoff
+const BACKOFF_MAX = 60000;   // 60s cap
+const BACKOFF_JITTER = 0.3;  // ±30% jitter
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -46,6 +57,25 @@ export function clearQueue() {
   queue.links.length = 0;
   queue.outcomes.length = 0;
   queue.acts.length = 0;
+  resetBackoff();
+}
+
+/** Reset backoff state. Exported for testing. */
+export function resetBackoff() {
+  backoff = { active: false, delay: 0, retries: 0 };
+}
+
+/** Get current backoff state. Exported for testing. */
+export function getBackoff() {
+  return { ...backoff };
+}
+
+/** Compute next backoff delay with jitter. */
+function nextBackoffDelay(retryAfterMs) {
+  if (retryAfterMs) return retryAfterMs;
+  const base = Math.min(BACKOFF_BASE * Math.pow(2, backoff.retries), BACKOFF_MAX);
+  const jitter = base * BACKOFF_JITTER * (Math.random() * 2 - 1);
+  return Math.round(base + jitter);
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +87,9 @@ function enqueue(type, event) {
 
   queue[type].push(event);
 
+  // During backoff, don't schedule additional flushes — the backoff timer handles it
+  if (backoff.active) return;
+
   const total = queue.runs.length + queue.groups.length + queue.calls.length
     + queue.links.length + queue.outcomes.length + queue.acts.length;
 
@@ -65,6 +98,19 @@ function enqueue(type, event) {
   } else if (!flushTimeout) {
     flushTimeout = setTimeout(flush, config.flushInterval);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Re-queue helper
+// ---------------------------------------------------------------------------
+
+function requeue(batch) {
+  queue.runs.unshift(...batch.runs);
+  queue.groups.unshift(...batch.groups);
+  queue.calls.unshift(...batch.calls);
+  queue.links.unshift(...batch.links);
+  queue.outcomes.unshift(...batch.outcomes);
+  queue.acts.unshift(...batch.acts);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,9 +171,39 @@ export async function flush() {
       body,
     });
 
+    if (res.status === 429) {
+      // Parse Retry-After header (seconds) if present
+      const retryAfterHeader = res.headers?.get?.('Retry-After');
+      const retryAfterMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 0;
+      const delay = nextBackoffDelay(retryAfterMs || 0);
+
+      backoff.active = true;
+      backoff.retries++;
+      backoff.delay = delay;
+
+      if (config.debug) {
+        console.warn(`[warpmetrics] Rate limited (429). Backing off ${delay}ms (retry #${backoff.retries})`);
+      }
+
+      // Re-queue events
+      requeue(batch);
+
+      // Schedule retry after backoff delay
+      flushTimeout = setTimeout(flush, delay);
+      return;
+    }
+
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       throw new Error(`HTTP ${res.status}: ${body}`);
+    }
+
+    // Success — reset backoff state
+    if (backoff.active) {
+      if (config.debug) {
+        console.log(`[warpmetrics] Backoff cleared after ${backoff.retries} retries`);
+      }
+      resetBackoff();
     }
 
     if (config.debug) {
@@ -139,13 +215,7 @@ export async function flush() {
     if (config.debug) {
       console.error('[warpmetrics] Flush failed:', err.message);
     }
-    // Re-queue so nothing is lost.
-    queue.runs.unshift(...batch.runs);
-    queue.groups.unshift(...batch.groups);
-    queue.calls.unshift(...batch.calls);
-    queue.links.unshift(...batch.links);
-    queue.outcomes.unshift(...batch.outcomes);
-    queue.acts.unshift(...batch.acts);
+    requeue(batch);
     throw err;
   }
 }
