@@ -158,6 +158,123 @@ Manually flush pending events. Events are auto-flushed on an interval and on pro
 await flush();
 ```
 
+## Entity Model
+
+Six entity types form an execution DAG. Every entity is created client-side, batched, and sent atomically to `POST /v1/events`.
+
+### Entities
+
+| Entity | Prefix | Purpose |
+|--------|--------|---------|
+| **Run** | `wm_run_` | Top-level execution unit. Has a label, opts, and startedAt. |
+| **Group** | `wm_grp_` | Logical phase/step inside a run or group. Nestable. |
+| **Call** | `wm_call_` | Single LLM API call with tokens, cost, duration. Always a leaf node. Created by `call()` (intercepted) or `trace()` (manual) — same entity either way. |
+| **Link** | — | Parent→child edge. Connects runs/groups to their children. No ID of its own. |
+| **Outcome** | `wm_oc_` | Named result recorded on a run, group, or call. |
+| **Act** | `wm_act_` | Action taken on an outcome. Can trigger follow-up runs. |
+
+IDs are monotonic ULIDs: `wm_{prefix}_{ulid}`.
+
+### Hierarchy (Links)
+
+```
+Run ──→ Group ──→ Group  (nestable)
+ │        │
+ │        └──→ Call
+ └──→ Call
+```
+
+- Links are directional (parent → child)
+- A child has exactly one parent
+- Calls are always leaf nodes
+- Groups can nest arbitrarily
+
+### Outcome → Act → Run chain
+
+The mechanism for multi-step workflows:
+
+```
+Run / Group / Call
+     │
+     └─ outcome("Needs Review")     → Outcome  (refId = entity)
+              │
+              └─ act("Review")      → Act      (refId = outcome)
+                       │
+                       └─ run(act)  → Run      (refId = act)
+```
+
+- An outcome references exactly one entity (run, group, or call) via `refId`
+- An act references exactly one outcome via `refId`
+- A follow-up run references exactly one act via `refId`
+- Multiple outcomes can target the same entity
+- Multiple acts can target the same outcome
+- An act with a follow-up run is "resolved"; without one it's "pending"
+
+### Runner pattern
+
+A graph runner processes the entity model by declaring a workflow graph and walking it:
+
+```
+define graph:
+  ActName → {
+    executor: string | null     # null = phase group (auto-transition)
+    results: {
+      resultType → [{ outcome, on?, next? }]
+    }
+  }
+
+define states:
+  OutcomeName → BoardColumn
+
+algorithm processRun(run):
+  act = findPendingAct(run)
+  while act:
+    node = graph[act.name]
+
+    if node.executor == null:                    # phase group
+      group = createGroup(run, node.label)
+      result = { type: "created" }
+    else:                                        # work act
+      result = execute(node.executor, run, act)
+
+    edges = node.results[result.type]            # [{outcome, on?, next?}]
+    for edge in edges:
+      container = resolveContainer(edge.on, run) # run or phase group
+      oc = recordOutcome(container, edge.outcome)
+      if edge.next:
+        act = emitAct(oc, edge.next, result.nextActOpts)
+
+    syncBoard(run, states[lastOutcome])
+
+    if not edge.next:
+      break                                      # terminal
+```
+
+Key concepts:
+
+- **Phase groups** (`executor: null`): create a group, auto-resolve with `created`, and immediately transition to the next act. No external work.
+- **Work acts** (`executor: string`): call an executor, get a typed result, map it to graph edges.
+- **`findPendingAct`**: walk the run's outcomes and group outcomes (newest first) to find the last act with no follow-up run.
+- **`resolveContainer`**: outcomes target either the top-level run (for board tracking) or a phase group (for scoped tracking). A single result can produce outcomes on both.
+- **Board sync**: map the last outcome name to a board column via the `states` map.
+
+### Event batch format
+
+All entities are sent atomically in a single `POST /v1/events` payload:
+
+```json
+{
+  "runs":     [{ "id", "label", "opts", "refId", "startedAt" }],
+  "groups":   [{ "id", "label", "opts", "startedAt" }],
+  "calls":    [{ "id", "provider", "model", "messages", "response", "tokens", "duration", ... }],
+  "links":    [{ "parentId", "childId", "type", "timestamp" }],
+  "outcomes": [{ "id", "refId", "name", "opts", "timestamp" }],
+  "acts":     [{ "id", "refId", "name", "opts", "timestamp" }]
+}
+```
+
+The body is base64-encoded: `{ "d": "<base64>" }`.
+
 ## Supported providers
 
 - **OpenAI** — `client.chat.completions.create()` and `client.responses.create()`
