@@ -22,3 +22,4 @@ export { act } from './trace/act.js';
 export { reserve } from './core/reserve.js';
 export { ref } from './trace/ref.js';
 export { flush } from './core/transport.js';
+export { query, get, inbox, exists, checkpoint } from './core/query.js';
